@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.brents.chords"
     },
     "android": {
       "adaptiveIcon": {
@@ -37,6 +38,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b5ccf1d5-826b-41f7-9e31-dcf4a26fe29b"
+      }
+    },
+    "owner": "brents"
   }
 }
