@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import Color from 'color';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -536,14 +537,14 @@ const styles = StyleSheet.create({
   },
   whiteKey: {
     flex: 1,
-    backgroundColor: '#FEFCF8', // Slightly warmer white
+    backgroundColor: '#FEFCF8',
     borderWidth: 1,
-    borderColor: '#D4C4A8', // Warm beige borders
-    borderRadius: 5, 
+    borderColor: '#D4C4A8',
+    borderRadius: 5,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingBottom: 10, 
-    marginHorizontal: 1, 
+    paddingBottom: 10,
+    marginHorizontal: 1,
   },
   whiteKeyText: {
     fontSize: 15, 
@@ -565,16 +566,16 @@ const styles = StyleSheet.create({
   },
   blackKey: {
     position: 'absolute',
-    width: 28, 
+    width: 28,
     height: '100%',
-    backgroundColor: '#1C1C1E', // Deep black like control panel
-    borderRadius: 4, 
+    backgroundColor: '#1C1C1E',
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#0A0A0A', // Even darker border
+    borderColor: '#0A0A0A',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingBottom: 8, 
-    zIndex: 1, 
+    paddingBottom: 8,
+    zIndex: 1,
   },
   blackKeyText: {
     color: '#F5F1E8', // Cream text
@@ -586,13 +587,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   whiteKeyDisabled: {
-    backgroundColor: '#F0EDE6', // Very subtle faded cream
-    opacity: 0.5,
-    borderColor: '#E0DAD0', // Faded border
+    backgroundColor: Color('#FEFCF8').darken(0.1).hex(),
+    borderColor: Color('#D4C4A8').darken(0.1).hex(),
   },
   blackKeyDisabled: {
-    backgroundColor: '#3A3A3A', // Lighter faded black
-    opacity: 0.4,
-    borderColor: '#2A2A2A', // Subtle border
+    backgroundColor: Color('#1C1C1E').lighten(1.5).hex(),
+    borderColor: Color('#0A0A0A').lighten(1.5).hex(),
   },
 }); 
