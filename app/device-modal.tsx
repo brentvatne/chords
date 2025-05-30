@@ -1,15 +1,27 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from 'expo-router';
-import React, { useCallback } from 'react';
+import { router } from "expo-router";
+import React, { useCallback, useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useMidi } from '../contexts/MidiContext';
+import { useMidi } from "../contexts/MidiContext";
 
 export default function DeviceModal() {
-  const { devices, connectedDevice, connectToDevice, disconnect, refreshDevices } = useMidi();
+  const {
+    devices,
+    connectedDevice,
+    connectToDevice,
+    disconnect,
+    refreshDevices,
+  } = useMidi();
 
   const handleRefresh = useCallback(() => {
     refreshDevices();
   }, [refreshDevices]);
+
+  useEffect(() => {
+    if (!connectedDevice && devices.length === 1) {
+      connectToDevice(devices[0].id);
+    }
+  }, [connectedDevice, devices, connectToDevice]);
 
   return (
     <View style={styles.container}>
@@ -19,14 +31,14 @@ export default function DeviceModal() {
             <Text style={styles.sectionTitle}>Connected Device</Text>
             <View style={styles.deviceRow}>
               <Text style={styles.deviceName}>{connectedDevice.name}</Text>
-              <Ionicons 
-                name="checkmark-circle-sharp" 
-                size={12} 
-                color="#32D74B" 
+              <Ionicons
+                name="checkmark-circle-sharp"
+                size={12}
+                color="#32D74B"
                 style={styles.connectedIcon}
               />
             </View>
-            <Pressable 
+            <Pressable
               style={styles.disconnectButton}
               onPress={() => {
                 disconnect();
@@ -40,11 +52,10 @@ export default function DeviceModal() {
 
         <View style={styles.availableSection}>
           <View style={styles.availableHeader}>
-            <Text style={styles.sectionTitle}>Available Devices ({devices.length})</Text>
-            <Pressable 
-              style={styles.refreshButton}
-              onPress={handleRefresh}
-            >
+            <Text style={styles.sectionTitle}>
+              Available Devices ({devices.length})
+            </Text>
+            <Pressable style={styles.refreshButton} onPress={handleRefresh}>
               <Ionicons name="refresh" size={20} color="#E89D45" />
             </Pressable>
           </View>
@@ -53,10 +64,12 @@ export default function DeviceModal() {
             <View style={styles.emptyState}>
               <Ionicons name="musical-note" size={40} color="#8A7B6B" />
               <Text style={styles.emptyTitle}>No MIDI devices found</Text>
-              <Text style={styles.emptyText}>Make sure your MIDI device is connected and try refreshing</Text>
+              <Text style={styles.emptyText}>
+                Make sure your MIDI device is connected and try refreshing
+              </Text>
             </View>
           ) : (
-            devices.map(device => (
+            devices.map((device) => (
               <Pressable
                 key={device.id}
                 style={styles.deviceItem}
@@ -78,22 +91,22 @@ export default function DeviceModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: "#1C1C1E",
   },
   content: {
     paddingVertical: 16,
     paddingBottom: 32,
   },
   connectedSection: {
-    backgroundColor: '#2A2A2A',
+    backgroundColor: "#2A2A2A",
     marginHorizontal: 16,
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
   },
   connectedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   connectedIcon: {
@@ -104,70 +117,70 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   availableHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   sectionTitle: {
-    color: '#F5F1E8',
+    color: "#F5F1E8",
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
     letterSpacing: -0.4,
     marginBottom: 6,
   },
   deviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   deviceName: {
-    color: '#F5F1E8',
+    color: "#F5F1E8",
     fontSize: 16,
     opacity: 0.9,
     letterSpacing: -0.2,
   },
   disconnectButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     paddingVertical: 8,
     paddingHorizontal: 0,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginTop: 12,
   },
   disconnectButtonText: {
-    color: '#FF453A',
+    color: "#FF453A",
     fontSize: 17,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   refreshButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#2A2A2A',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#2A2A2A",
+    justifyContent: "center",
+    alignItems: "center",
   },
   deviceItem: {
-    backgroundColor: '#2A2A2A',
+    backgroundColor: "#2A2A2A",
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 32,
   },
   emptyTitle: {
-    color: '#F5F1E8',
+    color: "#F5F1E8",
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
-    color: '#8A7B6B',
+    color: "#8A7B6B",
     fontSize: 15,
-    textAlign: 'center',
+    textAlign: "center",
     paddingHorizontal: 32,
   },
-}); 
+});

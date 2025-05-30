@@ -1,6 +1,19 @@
 // All possible notes in order
-const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const;
-type Note = typeof NOTES[number];
+const NOTES = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+] as const;
+type Note = (typeof NOTES)[number];
 
 // Major scale pattern in semitones: W-W-H-W-W-W-H (W=2 semitones, H=1 semitone)
 const MAJOR_SCALE_PATTERN = [2, 2, 1, 2, 2, 2, 1];
@@ -46,6 +59,8 @@ export function isNoteInKey(note: Note, key: Note): boolean {
  */
 export function getNoteWithoutOctave(noteWithOctave: string): Note {
   // If the note has a sharp, take first two characters, otherwise take first character
-  const note = noteWithOctave.includes('#') ? noteWithOctave.slice(0, 2) : noteWithOctave.slice(0, 1);
+  const note = noteWithOctave.includes("#")
+    ? noteWithOctave.slice(0, 2)
+    : noteWithOctave.slice(0, 1);
   return note as Note;
-} 
+}

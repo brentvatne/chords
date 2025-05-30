@@ -1,17 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
-} from 'react-native';
-import {
-    MidiDevice,
-    MidiKeyboard,
-    noteToName
-} from '../';
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { MidiDevice, MidiKeyboard, noteToName } from "../";
 
 const KeyboardKey: React.FC<{
   note: number;
@@ -25,7 +21,8 @@ const KeyboardKey: React.FC<{
       style={[
         styles.key,
         isBlack ? styles.blackKey : styles.whiteKey,
-        isPressed && (isBlack ? styles.blackKeyPressed : styles.whiteKeyPressed),
+        isPressed &&
+          (isBlack ? styles.blackKeyPressed : styles.whiteKeyPressed),
       ]}
       onPressIn={() => onPress(note)}
       onPressOut={() => onRelease(note)}
@@ -54,18 +51,18 @@ export const MidiKeyboardExample: React.FC = () => {
     // Set up device listeners
     const cleanup = midiKeyboard.addDeviceListener(
       (deviceId, deviceName) => {
-        Alert.alert('Device Connected', `Connected to ${deviceName}`);
+        Alert.alert("Device Connected", `Connected to ${deviceName}`);
         setConnected(true);
         setSelectedDevice(deviceId);
       },
       (deviceId, deviceName) => {
-        Alert.alert('Device Disconnected', `Disconnected from ${deviceName}`);
+        Alert.alert("Device Disconnected", `Disconnected from ${deviceName}`);
         setConnected(false);
         setSelectedDevice(null);
       },
       (devices) => {
         setDevices(devices);
-      }
+      },
     );
 
     return () => {
@@ -79,7 +76,7 @@ export const MidiKeyboardExample: React.FC = () => {
       const deviceList = await midiKeyboard.getDevices();
       setDevices(deviceList);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load MIDI devices');
+      Alert.alert("Error", "Failed to load MIDI devices");
     }
   };
 
@@ -90,24 +87,24 @@ export const MidiKeyboardExample: React.FC = () => {
         setConnected(true);
         setSelectedDevice(deviceId);
       } else {
-        Alert.alert('Error', 'Failed to connect to device');
+        Alert.alert("Error", "Failed to connect to device");
       }
     } catch (error) {
-      Alert.alert('Error', 'Connection failed');
+      Alert.alert("Error", "Connection failed");
     }
   };
 
   const handleKeyPress = async (note: number) => {
-    setPressedKeys(prev => new Set(prev).add(note));
+    setPressedKeys((prev) => new Set(prev).add(note));
     try {
       await midiKeyboard.playNote(note, velocity);
     } catch (error) {
-      console.error('Error playing note:', error);
+      console.error("Error playing note:", error);
     }
   };
 
   const handleKeyRelease = async (note: number) => {
-    setPressedKeys(prev => {
+    setPressedKeys((prev) => {
       const newSet = new Set(prev);
       newSet.delete(note);
       return newSet;
@@ -115,7 +112,7 @@ export const MidiKeyboardExample: React.FC = () => {
     try {
       await midiKeyboard.releaseNote(note, velocity);
     } catch (error) {
-      console.error('Error releasing note:', error);
+      console.error("Error releasing note:", error);
     }
   };
 
@@ -127,7 +124,7 @@ export const MidiKeyboardExample: React.FC = () => {
     return (
       <View style={styles.octaveContainer} key={octaveNumber}>
         <View style={styles.whiteKeysRow}>
-          {whiteNotes.map(offset => {
+          {whiteNotes.map((offset) => {
             const note = baseNote + offset;
             return (
               <KeyboardKey
@@ -147,10 +144,7 @@ export const MidiKeyboardExample: React.FC = () => {
             return (
               <View
                 key={note}
-                style={[
-                  styles.blackKeyContainer,
-                  { left: 35 + position * 50 },
-                ]}
+                style={[styles.blackKeyContainer, { left: 35 + position * 50 }]}
               >
                 <KeyboardKey
                   note={note}
@@ -172,7 +166,7 @@ export const MidiKeyboardExample: React.FC = () => {
       <View style={styles.header}>
         <Text style={styles.title}>MIDI Keyboard</Text>
         <Text style={styles.status}>
-          {connected ? `Connected to ${selectedDevice}` : 'Not connected'}
+          {connected ? `Connected to ${selectedDevice}` : "Not connected"}
         </Text>
       </View>
 
@@ -182,7 +176,7 @@ export const MidiKeyboardExample: React.FC = () => {
           {devices.length === 0 ? (
             <Text style={styles.noDevices}>No MIDI devices found</Text>
           ) : (
-            devices.map(device => (
+            devices.map((device) => (
               <TouchableOpacity
                 key={device.id}
                 style={styles.deviceItem}
@@ -229,7 +223,7 @@ export const MidiKeyboardExample: React.FC = () => {
 
           <ScrollView horizontal style={styles.keyboard}>
             <View style={styles.keyboardContent}>
-              {[3, 4, 5].map(octaveNum => renderOctave(octaveNum))}
+              {[3, 4, 5].map((octaveNum) => renderOctave(octaveNum))}
             </View>
           </ScrollView>
 
@@ -250,21 +244,21 @@ export const MidiKeyboardExample: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
   },
   header: {
     padding: 20,
-    backgroundColor: '#333',
-    alignItems: 'center',
+    backgroundColor: "#333",
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+    fontWeight: "bold",
+    color: "white",
   },
   status: {
     fontSize: 14,
-    color: '#ccc',
+    color: "#ccc",
     marginTop: 5,
   },
   deviceList: {
@@ -273,21 +267,21 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   noDevices: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     marginTop: 20,
   },
   deviceItem: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 15,
     marginBottom: 10,
     borderRadius: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 2 },
@@ -295,133 +289,133 @@ const styles = StyleSheet.create({
   },
   deviceName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   deviceId: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
     marginTop: 2,
   },
   refreshButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: "#007bff",
     padding: 15,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
   },
   refreshButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   controls: {
     padding: 20,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    borderBottomColor: "#ddd",
   },
   controlRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 10,
   },
   controlLabel: {
     fontSize: 16,
   },
   velocityButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
   },
   controlButton: {
-    backgroundColor: '#eee',
+    backgroundColor: "#eee",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 5,
   },
   disconnectButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: "#dc3545",
     padding: 10,
     borderRadius: 5,
-    alignItems: 'center',
+    alignItems: "center",
   },
   disconnectButtonText: {
-    color: 'white',
-    fontWeight: '600',
+    color: "white",
+    fontWeight: "600",
   },
   keyboard: {
     flex: 1,
   },
   keyboardContent: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingVertical: 20,
   },
   octaveContainer: {
-    position: 'relative',
+    position: "relative",
     width: 350,
     height: 200,
   },
   whiteKeysRow: {
-    flexDirection: 'row',
-    position: 'absolute',
+    flexDirection: "row",
+    position: "absolute",
     bottom: 0,
   },
   blackKeysRow: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     height: 120,
   },
   key: {
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    justifyContent: "flex-end",
+    alignItems: "center",
     paddingBottom: 10,
   },
   whiteKey: {
     width: 48,
     height: 180,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     marginHorizontal: 1,
   },
   blackKey: {
     width: 36,
     height: 120,
-    backgroundColor: '#333',
+    backgroundColor: "#333",
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: "#000",
   },
   blackKeyContainer: {
-    position: 'absolute',
+    position: "absolute",
   },
   whiteKeyPressed: {
-    backgroundColor: '#ddd',
+    backgroundColor: "#ddd",
   },
   blackKeyPressed: {
-    backgroundColor: '#555',
+    backgroundColor: "#555",
   },
   keyText: {
     fontSize: 10,
-    color: '#666',
+    color: "#666",
   },
   blackKeyText: {
-    color: 'white',
+    color: "white",
   },
   footer: {
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   panicButton: {
-    backgroundColor: '#ff0000',
+    backgroundColor: "#ff0000",
     paddingHorizontal: 40,
     paddingVertical: 15,
     borderRadius: 8,
   },
   panicButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
-}); 
+});
