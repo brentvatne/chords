@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "icon": "./assets/images/icon.png",
     "scheme": "chords",
+    "orientation": "default",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
