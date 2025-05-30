@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMidi } from '../contexts/MidiContext';
 import {
-    ExtensionType,
-    MusicalNoteWithOctave,
-    TriadType,
-    chordToMidiNotes,
-    getChordInfo
+  ExtensionType,
+  MusicalNoteWithOctave,
+  TriadType,
+  chordToMidiNotes,
+  getChordInfo
 } from '../utils/chords';
 
 async function playNotesAsync(keyboard: any, midiNotes: number[], velocity: number, duration: number) {
@@ -112,6 +112,13 @@ export default function PlayScreen() {
   const [selectedTriad, setSelectedTriad] = useState<TriadType>('major');
   const [selectedExtensions, setSelectedExtensions] = useState<ExtensionType[]>([]);
   const [currentChordInfo, setCurrentChordInfo] = useState<{ name: string; notes: string[] } | null>(null);
+  const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (!connectedDevice) {
+      router.push('/device-modal');
+    }
+  }, [connectedDevice]);
 
   const handleNotePress = async (noteNameWithOctave: string) => {
     try {
@@ -166,20 +173,23 @@ export default function PlayScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.content}>
-        <View style={styles.chordDisplayArea}>
-          {currentChordInfo ? (
-            <>
-              <Text style={styles.chordNameText}>{currentChordInfo.name}</Text>
-              <Text style={styles.chordNotesText}>{currentChordInfo.notes.join(', ')}</Text>
-            </>
-          ) : (
-            <View style={styles.chordPlaceholder}>
-              <Text style={styles.chordNameText}>Play a chord</Text>
-              <Text style={styles.chordNotesText}>Notes will appear here</Text>
-            </View>
-          )}
+        <View style={[styles.header, { paddingTop: insets.top / 2 }]}>
+          <Pressable 
+            onPress={() => router.push('/device-modal')}
+            style={[styles.headerButton, { top: insets.top }]}
+          >
+            <Ionicons name="hardware-chip-outline" size={24} color="#E89D45" />
+          </Pressable>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>
+              {currentChordInfo ? currentChordInfo.name : 'Play a chord'}
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              {currentChordInfo ? currentChordInfo.notes.join(', ') : 'Notes will appear here'}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.controlsArea}>
@@ -237,21 +247,38 @@ export default function PlayScreen() {
           </View>
 
           <View style={styles.keyboardArea}>
-            <View style={styles.octaveControls}>
+            <View style={styles.keyboardControls}>
+              <View style={styles.octaveStepper}>
+                <Pressable 
+                  style={[styles.stepperButton, octave <= 1 && styles.stepperButtonDisabled]}
+                  onPress={() => setOctave(Math.max(1, octave - 1))}
+                  disabled={octave <= 1}
+                >
+                  <Text style={[
+                    styles.stepperButtonText,
+                    octave <= 1 && styles.stepperButtonTextDisabled
+                  ]}>−</Text>
+                </Pressable>
+                <Text style={styles.octaveDisplay}>{octave}</Text>
+                <Pressable 
+                  style={[styles.stepperButton, octave >= 8 && styles.stepperButtonDisabled]}
+                  onPress={() => setOctave(Math.min(8, octave + 1))}
+                  disabled={octave >= 8}
+                >
+                  <Text style={[
+                    styles.stepperButtonText,
+                    octave >= 8 && styles.stepperButtonTextDisabled
+                  ]}>+</Text>
+                </Pressable>
+              </View>
+
               <Pressable 
-                style={styles.octaveButton}
-                onPress={() => setOctave(Math.max(1, octave - 1))}
-                disabled={octave <= 1}
+                style={styles.keyButton}
+                onPress={() => {
+                  // TODO: Open key selection modal
+                }}
               >
-                <Ionicons name="chevron-back-outline" size={28} color={octave <= 1 ? styles.disabledText.color : styles.octaveButtonText.color} />
-              </Pressable>
-              
-              <Pressable 
-                style={styles.octaveButton}
-                onPress={() => setOctave(Math.min(8, octave + 1))}
-                disabled={octave >= 8}
-              >
-                <Ionicons name="chevron-forward-outline" size={28} color={octave >= 8 ? styles.disabledText.color : styles.octaveButtonText.color} />
+                <Text style={styles.keyButtonText}>Key: C</Text>
               </Pressable>
             </View>
             <Keyboard octave={octave} onNotePress={handleNotePress} />
@@ -269,7 +296,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
   },
   noDeviceContainer: {
     flex: 1,
@@ -303,12 +329,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  header: {
+    flexDirection: 'column',
+    backgroundColor: '#1C1C1E',
+    paddingTop: 16,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+  },
+  headerContent: {
+    width: '100%',
+  },
+  headerTitle: {
+    color: '#F5F1E8',
+    fontSize: 40,
+    fontWeight: 'bold',
+    marginTop: 48,
+  },
+  headerSubtitle: {
+    color: '#E89D45',
+    fontSize: 20,
+    marginTop: 8,
+  },
+  headerButton: {
+    padding: 8,
+    position: 'absolute',
+    right: 16,
+    top: 8,
+  },
+  controlsArea: {
+    flex: 1, 
+  },
   chordQualityContainer: {
+    marginHorizontal: 0,
+    paddingHorizontal: 16,
     marginBottom: 15,
-    paddingHorizontal: 15,
-    backgroundColor: '#1C1C1E', // Black like control panel
+    backgroundColor: '#1C1C1E',
     paddingVertical: 15,
-    borderRadius: 12,
+    // borderRadius: 12,
     borderWidth: 2,
     borderColor: '#2A2A2A',
   },
@@ -347,23 +404,60 @@ const styles = StyleSheet.create({
   keyboardArea: {
     // This will contain octave controls and keyboard
   },
-  octaveControls: {
+  keyboardControls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 10,
-    marginBottom: 8, 
+    marginBottom: 8,
   },
-  octaveButton: {
-    padding: 8, 
+  octaveStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    padding: 4,
   },
-  octaveButtonText: {
-    color: '#E89D45', // Warm orange
-    fontSize: 14,
+  stepperButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#2A2A2A',
+    borderRadius: 6,
+  },
+  stepperButtonDisabled: {
+    backgroundColor: '#1C1C1E',
+    opacity: 0.5,
+  },
+  stepperButtonText: {
+    color: '#E89D45',
+    fontSize: 20,
     fontWeight: 'bold',
   },
-  disabledText: {
-    color: '#8A7B6B', // Muted brown
+  stepperButtonTextDisabled: {
+    color: '#8A7B6B',
+  },
+  octaveDisplay: {
+    color: '#F5F1E8',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginHorizontal: 12,
+  },
+  keyButton: {
+    backgroundColor: '#1C1C1E',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  keyButtonText: {
+    color: '#E89D45',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   keyboard: {
     height: 220, 
@@ -425,40 +519,6 @@ const styles = StyleSheet.create({
     fontSize: 11, 
     fontWeight: 'bold',
     marginBottom: 2,
-  },
-  chordDisplayArea: {
-    paddingTop: 20, 
-    paddingBottom: 15,
-    alignItems: 'center',
-    justifyContent: 'center', // Added for vertical centering
-    minHeight: 80, // Adjusted minHeight for two lines of text
-    backgroundColor: '#1C1C1E', // Black like control panel
-    marginHorizontal: 15,
-    marginBottom: 20,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#2A2A2A',
-  },
-  chordPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0.6, // Make placeholder less prominent
-  },
-  chordNameText: {
-    fontSize: 26, // Slightly adjusted size
-    fontWeight: 'bold',
-    color: '#F5F1E8', // Cream text on dark background
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  chordNotesText: {
-    fontSize: 15, // Slightly adjusted size
-    color: '#E89D45', // Warm orange for chord notes
-    textAlign: 'center',
-  },
-  controlsArea: {
-    flex: 1, 
-    justifyContent: 'flex-end', 
   },
   keyLabelContainer: {
     alignItems: 'center',
