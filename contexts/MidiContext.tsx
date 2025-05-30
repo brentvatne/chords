@@ -38,8 +38,10 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
   const [_keyboard, _setKeyboard] = useState<any>(null);
 
   // In simulator, always use mock device
-  const connectedDevice = Device.isDevice ? _connectedDevice : mockDevice;
-  const keyboard = Device.isDevice ? _keyboard : mockKeyboard;
+  const connectedDevice = _connectedDevice
+  // const connectedDevice = Device.isDevice ? _connectedDevice : mockDevice;
+  const keyboard = _keyboard;
+  // const keyboard = Device.isDevice ? _keyboard : mockKeyboard;
 
   const refreshDevices = () => {
     if (Device.isDevice) {

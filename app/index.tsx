@@ -132,7 +132,9 @@ export default function PlayScreen() {
 
   useEffect(() => {
     if (!connectedDevice) {
-      router.push('/device-modal');
+      setTimeout(() => {
+        router.push('/device-modal');
+      }, 100)
     }
   }, [connectedDevice]);
 
@@ -180,7 +182,7 @@ export default function PlayScreen() {
         </Text>
         <Pressable 
           style={styles.deviceButton}
-          onPress={() => router.push('/device-modal')}
+          onPress={() => router.push('device-modal')}
         >
           <Text style={styles.deviceButtonText}>Connect Device</Text>
         </Pressable>
