@@ -54,6 +54,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
+    height: 80,
     borderColor: '#404040',
   },
   clearButton: {
@@ -64,7 +65,6 @@ const styles = StyleSheet.create({
     color: '#F5F1E8',
     fontSize: 28,
     fontWeight: '600',
-    lineHeight: 34,
     paddingTop: 4,
   },
 }); 

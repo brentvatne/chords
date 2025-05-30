@@ -68,7 +68,7 @@ export default function RootLayout() {
           <Stack.Screen
             name="key-modal"
             options={{
-              title: 'Select Key',
+              title: 'Select key',
               presentation: 'formSheet',
               headerStyle: {
                 backgroundColor: '#1C1C1E',
