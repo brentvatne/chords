@@ -57,8 +57,10 @@ function Keyboard({ octave, onNotePress }: KeyboardProps) {
             style={styles.whiteKey}
             onPress={() => onNotePress(`${note}${octave}`)}
           >
-            <Text style={styles.whiteKeyText}>{note}</Text>
-            {note === 'C' && <Text style={styles.octaveText}>{octave}</Text>}
+            <View style={styles.keyLabelContainer}>
+              {note === 'C' && <Text style={styles.octaveText}>{octave}</Text>}
+              <Text style={styles.whiteKeyText}>{note}</Text>
+            </View>
           </Pressable>
         ))}
       </View>
@@ -131,9 +133,9 @@ export default function PlayScreen() {
 
   if (!connectedDevice) {
     return (
-      <SafeAreaView style={styles.centeredContainer}>
-        <Text style={styles.noDeviceTitle}>No MIDI device connected</Text>
-        <Text style={styles.noDeviceSubtitle}>
+      <SafeAreaView style={styles.noDeviceContainer}>
+        <Text style={styles.noDeviceText}>No MIDI device connected</Text>
+        <Text style={styles.noDeviceSubtext}>
           To play notes on the keyboard, please connect to a MIDI device first.
         </Text>
         <Pressable 
@@ -150,93 +152,95 @@ export default function PlayScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.chordDisplayArea}>
-        {currentChordInfo ? (
-          <>
-            <Text style={styles.chordNameText}>{currentChordInfo.name}</Text>
-            <Text style={styles.chordNotesText}>{currentChordInfo.notes.join(', ')}</Text>
-          </>
-        ) : (
-          <View style={styles.chordPlaceholder}>
-            <Text style={styles.chordNameText}>Play a chord</Text>
-            <Text style={styles.chordNotesText}>Notes will appear here</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.controlsArea}>
-        <View style={styles.chordQualityContainer}>
-          <View style={styles.qualitySection}>
-            <View style={styles.qualitySelector}>
-              {TRIAD_TYPES.map(triad => (
-                <Pressable
-                  key={triad}
-                  style={[
-                    styles.qualityButton,
-                    selectedTriad === triad && styles.qualityButtonSelected
-                  ]}
-                  onPress={() => setSelectedTriad(triad)}
-                >
-                  <Text 
-                    style={[
-                      styles.qualityButtonText,
-                      selectedTriad === triad && styles.qualityButtonTextSelected
-                    ]}
-                  >
-                    {triad === 'dim' ? 'Dim' : 
-                     triad === 'minor' ? 'Min' : 
-                     triad === 'major' ? 'Maj' : 
-                     'Sus'}
-                  </Text>
-                </Pressable>
-              ))}
+      <View style={styles.content}>
+        <View style={styles.chordDisplayArea}>
+          {currentChordInfo ? (
+            <>
+              <Text style={styles.chordNameText}>{currentChordInfo.name}</Text>
+              <Text style={styles.chordNotesText}>{currentChordInfo.notes.join(', ')}</Text>
+            </>
+          ) : (
+            <View style={styles.chordPlaceholder}>
+              <Text style={styles.chordNameText}>Play a chord</Text>
+              <Text style={styles.chordNotesText}>Notes will appear here</Text>
             </View>
-          </View>
-
-          <View style={styles.qualitySection}>
-            <View style={styles.qualitySelector}>
-              {EXTENSION_TYPES.map(extension => (
-                <Pressable
-                  key={extension}
-                  style={[
-                    styles.qualityButton,
-                    selectedExtensions.includes(extension) && styles.qualityButtonSelected
-                  ]}
-                  onPress={() => toggleExtension(extension)}
-                >
-                  <Text 
-                    style={[
-                      styles.qualityButtonText,
-                      selectedExtensions.includes(extension) && styles.qualityButtonTextSelected
-                    ]}
-                  >
-                    {extension}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
+          )}
         </View>
 
-        <View style={styles.keyboardArea}>
-          <View style={styles.octaveControls}>
-            <Pressable 
-              style={styles.octaveButton}
-              onPress={() => setOctave(Math.max(1, octave - 1))}
-              disabled={octave <= 1}
-            >
-              <Ionicons name="chevron-back-outline" size={28} color={octave <= 1 ? styles.disabledText.color : styles.octaveButtonText.color} />
-            </Pressable>
-            
-            <Pressable 
-              style={styles.octaveButton}
-              onPress={() => setOctave(Math.min(8, octave + 1))}
-              disabled={octave >= 8}
-            >
-              <Ionicons name="chevron-forward-outline" size={28} color={octave >= 8 ? styles.disabledText.color : styles.octaveButtonText.color} />
-            </Pressable>
+        <View style={styles.controlsArea}>
+          <View style={styles.chordQualityContainer}>
+            <View style={styles.qualitySection}>
+              <View style={styles.qualitySelector}>
+                {TRIAD_TYPES.map(triad => (
+                  <Pressable
+                    key={triad}
+                    style={[
+                      styles.qualityButton,
+                      selectedTriad === triad && styles.qualityButtonSelected
+                    ]}
+                    onPress={() => setSelectedTriad(triad)}
+                  >
+                    <Text 
+                      style={[
+                        styles.qualityButtonText,
+                        selectedTriad === triad && styles.qualityButtonTextSelected
+                      ]}
+                    >
+                      {triad === 'dim' ? 'Dim' : 
+                       triad === 'minor' ? 'Min' : 
+                       triad === 'major' ? 'Maj' : 
+                       'Sus'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.qualitySection}>
+              <View style={styles.qualitySelector}>
+                {EXTENSION_TYPES.map(extension => (
+                  <Pressable
+                    key={extension}
+                    style={[
+                      styles.qualityButton,
+                      selectedExtensions.includes(extension) && styles.qualityButtonSelected
+                    ]}
+                    onPress={() => toggleExtension(extension)}
+                  >
+                    <Text 
+                      style={[
+                        styles.qualityButtonText,
+                        selectedExtensions.includes(extension) && styles.qualityButtonTextSelected
+                      ]}
+                    >
+                      {extension}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           </View>
-          <Keyboard octave={octave} onNotePress={handleNotePress} />
+
+          <View style={styles.keyboardArea}>
+            <View style={styles.octaveControls}>
+              <Pressable 
+                style={styles.octaveButton}
+                onPress={() => setOctave(Math.max(1, octave - 1))}
+                disabled={octave <= 1}
+              >
+                <Ionicons name="chevron-back-outline" size={28} color={octave <= 1 ? styles.disabledText.color : styles.octaveButtonText.color} />
+              </Pressable>
+              
+              <Pressable 
+                style={styles.octaveButton}
+                onPress={() => setOctave(Math.min(8, octave + 1))}
+                disabled={octave >= 8}
+              >
+                <Ionicons name="chevron-forward-outline" size={28} color={octave >= 8 ? styles.disabledText.color : styles.octaveButtonText.color} />
+              </Pressable>
+            </View>
+            <Keyboard octave={octave} onNotePress={handleNotePress} />
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -246,72 +250,52 @@ export default function PlayScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 5, 
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5F1E8', // Cream/beige like keyboard body
   },
-  centeredContainer: {
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  noDeviceContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingBottom: 100,
   },
-  chordDisplayArea: {
-    paddingTop: 20, 
-    paddingBottom: 15,
-    alignItems: 'center',
-    justifyContent: 'center', // Added for vertical centering
-    minHeight: 80, // Adjusted minHeight for two lines of text
+  deviceIcon: {
+    marginBottom: 20,
   },
-  chordPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0.5, // Make placeholder less prominent
-  },
-  chordNameText: {
-    fontSize: 26, // Slightly adjusted size
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  chordNotesText: {
-    fontSize: 15, // Slightly adjusted size
-    color: '#555',
-    textAlign: 'center',
-  },
-  controlsArea: {
-    flex: 1, 
-    justifyContent: 'flex-end', 
-  },
-  noDeviceTitle: {
+  noDeviceText: {
     fontSize: 18,
+    color: '#6B5B47', // Warm brown
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  noDeviceSubtext: {
+    fontSize: 14,
+    color: '#8A7B6B', // Muted brown
     textAlign: 'center',
     marginBottom: 20,
-    fontWeight: 'bold',
-  },
-  noDeviceSubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#666',
   },
   deviceButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#E89D45', // Warm orange like active buttons
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
   },
   deviceButtonText: {
-    color: 'white',
+    color: '#F5F1E8', // Cream text
     fontSize: 16,
     fontWeight: 'bold',
   },
   chordQualityContainer: {
     marginBottom: 15,
     paddingHorizontal: 15,
-    backgroundColor: '#000',
+    backgroundColor: '#1C1C1E', // Black like control panel
     paddingVertical: 15,
     borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#2A2A2A',
   },
   qualitySection: {
     marginBottom: 15,
@@ -326,24 +310,24 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#333',
-    backgroundColor: '#1C1C1E',
+    borderColor: '#404040',
+    backgroundColor: '#2A2A2A', // Dark gray like inactive buttons
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
   },
   qualityButtonSelected: {
     borderColor: '#E89D45',
-    backgroundColor: '#E89D45',
+    backgroundColor: '#E89D45', // Warm orange for selected
   },
   qualityButtonText: {
-    color: '#fff',
+    color: '#F5F1E8', // Cream text
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
   },
   qualityButtonTextSelected: {
-    color: '#fff',
+    color: '#1C1C1E', // Dark text on orange background
   },
   keyboardArea: {
     // This will contain octave controls and keyboard
@@ -359,17 +343,21 @@ const styles = StyleSheet.create({
     padding: 8, 
   },
   octaveButtonText: {
-    color: '#007AFF', 
+    color: '#E89D45', // Warm orange
     fontSize: 14,
     fontWeight: 'bold',
   },
   disabledText: {
-    color: '#ccc',
+    color: '#8A7B6B', // Muted brown
   },
   keyboard: {
     height: 220, 
     marginHorizontal: 0, 
-    position: 'relative', 
+    position: 'relative',
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#D4C4A8', // Warm beige border
   },
   whiteKeysContainer: {
     flexDirection: 'row',
@@ -377,9 +365,9 @@ const styles = StyleSheet.create({
   },
   whiteKey: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FEFCF8', // Slightly warmer white
     borderWidth: 1,
-    borderColor: '#bbb',
+    borderColor: '#D4C4A8', // Warm beige borders
     borderRadius: 5, 
     justifyContent: 'flex-end',
     alignItems: 'center',
@@ -389,12 +377,13 @@ const styles = StyleSheet.create({
   whiteKeyText: {
     fontSize: 15, 
     fontWeight: 'bold',
-    marginBottom: 2,
-    color: '#333',
+    color: '#2A2A2A', // Dark gray
   },
   octaveText: {
     fontSize: 11, 
-    color: '#666',
+    color: '#8A7B6B', // Muted brown
+    fontWeight: '600',
+    marginBottom: 2, // Small gap between octave and note
   },
   blackKeysContainer: {
     position: 'absolute',
@@ -407,19 +396,56 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 28, 
     height: '100%',
-    backgroundColor: '#333', 
+    backgroundColor: '#1C1C1E', // Deep black like control panel
     borderRadius: 4, 
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: '#0A0A0A', // Even darker border
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingBottom: 8, 
     zIndex: 1, 
   },
   blackKeyText: {
-    color: '#fff',
+    color: '#F5F1E8', // Cream text
     fontSize: 11, 
     fontWeight: 'bold',
     marginBottom: 2,
+  },
+  chordDisplayArea: {
+    paddingTop: 20, 
+    paddingBottom: 15,
+    alignItems: 'center',
+    justifyContent: 'center', // Added for vertical centering
+    minHeight: 80, // Adjusted minHeight for two lines of text
+    backgroundColor: '#1C1C1E', // Black like control panel
+    marginHorizontal: 15,
+    marginBottom: 20,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#2A2A2A',
+  },
+  chordPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.6, // Make placeholder less prominent
+  },
+  chordNameText: {
+    fontSize: 26, // Slightly adjusted size
+    fontWeight: 'bold',
+    color: '#F5F1E8', // Cream text on dark background
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  chordNotesText: {
+    fontSize: 15, // Slightly adjusted size
+    color: '#E89D45', // Warm orange for chord notes
+    textAlign: 'center',
+  },
+  controlsArea: {
+    flex: 1, 
+    justifyContent: 'flex-end', 
+  },
+  keyLabelContainer: {
+    alignItems: 'center',
   },
 }); 
