@@ -1,3 +1,4 @@
+import { MidiKeyboard } from "@/modules/simple-midi";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -38,6 +39,22 @@ async function playNotesAsync(
 const TRIAD_TYPES: TriadType[] = ["dim", "minor", "major", "sus"];
 const EXTENSION_TYPES: ExtensionType[] = ["6", "m7", "M7", "9"];
 
+async function sendNotesOnAsync(
+  keyboard: MidiKeyboard,
+  notes: number[],
+  velocity: number,
+) {
+  for (const note of notes) {
+    await keyboard.playNote(note, velocity);
+  }
+}
+
+async function sendNotesOffAsync(keyboard: MidiKeyboard, notes: number[]) {
+  for (const note of notes) {
+    await keyboard.releaseNote(note);
+  }
+}
+
 export default function PlayScreen() {
   const { selectedKey } = useLocalSearchParams<{ selectedKey: string }>();
   const { connectedDevice, keyboard, devices, connectToDevice } = useMidi();
@@ -53,8 +70,9 @@ export default function PlayScreen() {
     notes: string[];
   } | null>(null);
   const insets = useSafeAreaInsets();
+  const pressedNotes = useRef<{ [key: string]: number[] }>({});
 
-  const handleNotePress = async (noteNameWithOctave: string) => {
+  const handleNotePressIn = async (noteNameWithOctave: string) => {
     try {
       const rootNote = noteNameWithOctave as MusicalNoteWithOctave;
       const selection = {
@@ -69,8 +87,9 @@ export default function PlayScreen() {
       // Get MIDI notes using the dedicated function and play them
       const midiNotesToPlay = chordToMidiNotes(selection, rootNote);
       if (midiNotesToPlay.length > 0) {
-        await playNotesAsync(keyboard, midiNotesToPlay, 100, 700);
-      } else if (displayInfo) {
+        await sendNotesOnAsync(keyboard, midiNotesToPlay, 100);
+        pressedNotes.current[noteNameWithOctave] = midiNotesToPlay;
+      } else {
         console.warn(
           `Could not play MIDI for ${displayInfo.name}, but display info was generated.`,
         );
@@ -83,6 +102,11 @@ export default function PlayScreen() {
       setCurrentChordInfo(null);
       alert(`Could not process chord. Please try again.`);
     }
+  };
+
+  const handleNotePressOut = async (noteNameWithOctave: string) => {
+    await sendNotesOffAsync(keyboard, pressedNotes.current[noteNameWithOctave]);
+    delete pressedNotes.current[noteNameWithOctave];
   };
 
   const toggleExtension = (extension: ExtensionType) => {
@@ -302,7 +326,8 @@ export default function PlayScreen() {
             </View>
             <Keyboard
               octave={octave}
-              onNotePress={handleNotePress}
+              onNotePressIn={handleNotePressIn}
+              onNotePressOut={handleNotePressOut}
               selectedKey={selectedKey || null}
             />
           </View>

@@ -5,14 +5,20 @@ import { getNoteWithoutOctave, isNoteInKey } from "../utils/keys";
 
 interface KeyboardProps {
   octave: number;
-  onNotePress: (note: string) => void;
+  onNotePressIn: (note: string) => void;
+  onNotePressOut: (note: string) => void;
   selectedKey: string | null;
 }
 
 const BlackKeyPressedColor = Color("#1C1C1E").lighten(1.5).hex();
 const WhiteKeyPressedColor = Color("#FEFCF8").darken(0.02).hex();
 
-export function Keyboard({ octave, onNotePress, selectedKey }: KeyboardProps) {
+export function Keyboard({
+  octave,
+  onNotePressIn,
+  onNotePressOut,
+  selectedKey,
+}: KeyboardProps) {
   const whiteKeys = ["C", "D", "E", "F", "G", "A", "B", "C"]; // Always show 8 keys
   const [keyboardWidth, setKeyboardWidth] = useState(0);
 
@@ -63,8 +69,11 @@ export function Keyboard({ octave, onNotePress, selectedKey }: KeyboardProps) {
                 isDisabled && styles.whiteKeyDisabled,
                 pressed && { backgroundColor: WhiteKeyPressedColor },
               ]}
-              onPress={
-                isDisabled ? undefined : () => onNotePress(noteWithOctave)
+              onPressIn={
+                isDisabled ? undefined : () => onNotePressIn(noteWithOctave)
+              }
+              onPressOut={
+                isDisabled ? undefined : () => onNotePressOut(noteWithOctave)
               }
               disabled={isDisabled}
             >
@@ -102,8 +111,13 @@ export function Keyboard({ octave, onNotePress, selectedKey }: KeyboardProps) {
                     },
                     isDisabled && styles.blackKeyDisabled,
                   ]}
-                  onPress={
-                    isDisabled ? undefined : () => onNotePress(noteWithOctave)
+                  onPressIn={
+                    isDisabled ? undefined : () => onNotePressIn(noteWithOctave)
+                  }
+                  onPressOut={
+                    isDisabled
+                      ? undefined
+                      : () => onNotePressOut(noteWithOctave)
                   }
                   disabled={isDisabled}
                 >
