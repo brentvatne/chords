@@ -1,112 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Chord, Note } from 'tonal';
 import { useMidi } from '../../contexts/MidiContext';
-
-type ChordQuality = 'major' | 'minor' | 'diminished' | 'augmented' | 'dominant' | 'minor-seventh' | 'major-seventh' | 'diminished-seventh' | 'augmented-seventh';
-type MusicalNote = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
-type MusicalNoteWithOctave = `${MusicalNote}${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}`;
-
-interface ChordInfo {
-  name: string;
-  notes: string[];
-  root: string;
-  quality: string;
-}
-
-// Maps our descriptive ChordQuality to Tonal-compatible chord type symbols
-function mapQualityToTonalType(quality: ChordQuality): string {
-  switch (quality) {
-    case 'major': return 'M'; // Tonal prefers M for major triads, or use 'major' if it works
-    case 'minor': return 'm'; // Tonal prefers m for minor triads
-    case 'diminished': return 'dim';
-    case 'augmented': return 'aug';
-    case 'dominant': return '7'; // Dominant usually implies the 7th
-    case 'minor-seventh': return 'm7';
-    case 'major-seventh': return 'M7'; // or 'maj7'
-    case 'diminished-seventh': return 'dim7'; // or 'o7'
-    case 'augmented-seventh': return 'aug7'; // or '+7'
-    default: return quality; // Fallback, though should not happen with defined types
-  }
-}
-
-function getChordFullName(tonic: string, type: string, qualityInput: ChordQuality): string {
-  // Use qualityInput for more descriptive naming if tonal's type is too terse (e.g., "M" vs "Major")
-  let qualityName = "";
-  switch (qualityInput) {
-    case 'major': qualityName = "Major"; break;
-    case 'minor': qualityName = "Minor"; break;
-    case 'diminished': qualityName = "Diminished"; break;
-    case 'augmented': qualityName = "Augmented"; break;
-    case 'dominant': qualityName = "Dominant 7th"; break;
-    case 'minor-seventh': qualityName = "Minor 7th"; break;
-    case 'major-seventh': qualityName = "Major 7th"; break;
-    case 'diminished-seventh': qualityName = "Diminished 7th"; break;
-    case 'augmented-seventh': qualityName = "Augmented 7th"; break;
-    default: qualityName = type; // Fallback to tonal's type
-  }
-  return `${Note.pitchClass(tonic)} ${qualityName}`;
-}
-
-function getChordInfo(quality: ChordQuality, root: MusicalNoteWithOctave): ChordInfo | null {
-  try {
-    const tonalType = mapQualityToTonalType(quality);
-    const chordData = Chord.getChord(tonalType, root);
-    if (chordData.empty || !chordData.tonic) {
-      console.warn(`No chord found or no tonic for ${root} (quality: ${quality}, tonalType: ${tonalType})`);
-      return null;
-    }
-    // For display name, use the original quality selected by the user for better description
-    const fullName = getChordFullName(chordData.tonic, chordData.type, quality);
-
-    return {
-      name: fullName,
-      notes: chordData.notes,
-      root: chordData.tonic, 
-      quality: chordData.type, 
-    };
-  } catch (e) {
-    console.error("Error in getChordInfo for display:", e);
-    return null;
-  }
-}
-
-function chordToMidiNotes(quality: ChordQuality, root: MusicalNoteWithOctave): number[] {
-  try {
-    const tonalType = mapQualityToTonalType(quality);
-    const chordData = Chord.getChord(tonalType, root);
-    if (chordData.empty) {
-      console.warn(`Cannot get MIDI notes for ${root} (quality: ${quality}, tonalType: ${tonalType}): chord data is empty.`);
-      return [];
-    }
-
-    const rootOctave = Note.octave(root);
-    if (rootOctave === undefined || rootOctave === null) {
-        console.warn(`Root note ${root} is missing an octave for MIDI conversion.`);
-        return []; // Cannot proceed without a base octave
-    }
-
-    const midiNotes = chordData.notes.map(noteName => {
-      let noteWithOctave = noteName;
-      const noteDetails = Note.get(noteName);
-      // If tonal returns a note without an octave, append the root's octave
-      if (noteDetails.oct === undefined || noteDetails.oct === null) {
-        noteWithOctave = `${noteDetails.pc}${rootOctave}`;
-      }
-      return Note.midi(noteWithOctave);
-    }).filter((note): note is number => note !== null);
-
-    if (midiNotes.length === 0 && chordData.notes.length > 0) {
-        console.warn(`Could not convert any notes to MIDI for ${root} ${quality}. Original notes: ${chordData.notes.join(',')}`);
-    }
-    return midiNotes;
-  } catch(e){
-    console.error("Error in chordToMidiNotes:", e);
-    return [];
-  }
-}
+import {
+  ExtensionType,
+  MusicalNoteWithOctave,
+  TriadType,
+  chordToMidiNotes,
+  getChordInfo
+} from '../../utils/chords';
 
 async function playNotesAsync(keyboard: any, midiNotes: number[], velocity: number, duration: number) {
   if (midiNotes.length === 0) return;
@@ -181,35 +84,49 @@ function Keyboard({ octave, onNotePress }: KeyboardProps) {
   );
 }
 
-const ALL_CHORD_QUALITIES: ChordQuality[] = ['major', 'minor', 'diminished', 'augmented', 'dominant', 'minor-seventh', 'major-seventh', 'diminished-seventh', 'augmented-seventh'];
+const TRIAD_TYPES: TriadType[] = ['dim', 'minor', 'major', 'sus'];
+const EXTENSION_TYPES: ExtensionType[] = ['6', 'm7', 'M7', '9'];
 
 export default function PlayScreen() {
   const { connectedDevice, keyboard } = useMidi();
   const [octave, setOctave] = useState(4);
-  const [selectedChordQuality, setSelectedChordQuality] = useState<ChordQuality>('major');
-  const [currentChordInfo, setCurrentChordInfo] = useState<ChordInfo | null>(null);
+  const [selectedTriad, setSelectedTriad] = useState<TriadType>('major');
+  const [selectedExtensions, setSelectedExtensions] = useState<ExtensionType[]>([]);
+  const [currentChordInfo, setCurrentChordInfo] = useState<{ name: string; notes: string[] } | null>(null);
 
   const handleNotePress = async (noteNameWithOctave: string) => {
     try {
       const rootNote = noteNameWithOctave as MusicalNoteWithOctave;
+      const selection = {
+        triad: selectedTriad,
+        extensions: selectedExtensions
+      };
       
       // Get chord info for display
-      const displayInfo = getChordInfo(selectedChordQuality, rootNote);
+      const displayInfo = getChordInfo(selection, rootNote);
       setCurrentChordInfo(displayInfo);
 
       // Get MIDI notes using the dedicated function and play them
-      const midiNotesToPlay = chordToMidiNotes(selectedChordQuality, rootNote);
+      const midiNotesToPlay = chordToMidiNotes(selection, rootNote);
       if (midiNotesToPlay.length > 0) {
         await playNotesAsync(keyboard, midiNotesToPlay, 100, 700);
-      } else if (displayInfo) { // If displayInfo was generated but no MIDI notes, it implies an issue
+      } else if (displayInfo) {
         console.warn(`Could not play MIDI for ${displayInfo.name}, but display info was generated.`);
       }
 
     } catch (error) {
-      console.error(`Error in handleNotePress for ${selectedChordQuality} with root ${noteNameWithOctave}:`, error);
-      setCurrentChordInfo(null); 
-      alert(`Could not process ${selectedChordQuality} chord. Please try again.`);
+      console.error(`Error in handleNotePress with selection ${JSON.stringify({ triad: selectedTriad, extensions: selectedExtensions })} and root ${noteNameWithOctave}:`, error);
+      setCurrentChordInfo(null);
+      alert(`Could not process chord. Please try again.`);
     }
+  };
+
+  const toggleExtension = (extension: ExtensionType) => {
+    setSelectedExtensions(prev => 
+      prev.includes(extension)
+        ? prev.filter(e => e !== extension)
+        : [...prev, extension]
+    );
   };
 
   if (!connectedDevice) {
@@ -249,27 +166,56 @@ export default function PlayScreen() {
 
       <View style={styles.controlsArea}>
         <View style={styles.chordQualityContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chordQualitySelector}>
-            {ALL_CHORD_QUALITIES.map(quality => (
-              <Pressable
-                key={quality}
-                style={[
-                  styles.qualityButton,
-                  selectedChordQuality === quality && styles.qualityButtonSelected
-                ]}
-                onPress={() => setSelectedChordQuality(quality)}
-              >
-                <Text 
+          <View style={styles.qualitySection}>
+            <View style={styles.qualitySelector}>
+              {TRIAD_TYPES.map(triad => (
+                <Pressable
+                  key={triad}
                   style={[
-                    styles.qualityButtonText,
-                    selectedChordQuality === quality && styles.qualityButtonTextSelected
+                    styles.qualityButton,
+                    selectedTriad === triad && styles.qualityButtonSelected
                   ]}
+                  onPress={() => setSelectedTriad(triad)}
                 >
-                  {quality.charAt(0).toUpperCase() + quality.slice(1).replace('-seventh', '7').replace('diminished', 'dim').replace('augmented', 'aug').replace('major', 'Maj').replace('minor', 'min')}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+                  <Text 
+                    style={[
+                      styles.qualityButtonText,
+                      selectedTriad === triad && styles.qualityButtonTextSelected
+                    ]}
+                  >
+                    {triad === 'dim' ? 'Dim' : 
+                     triad === 'minor' ? 'Min' : 
+                     triad === 'major' ? 'Maj' : 
+                     'Sus'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.qualitySection}>
+            <View style={styles.qualitySelector}>
+              {EXTENSION_TYPES.map(extension => (
+                <Pressable
+                  key={extension}
+                  style={[
+                    styles.qualityButton,
+                    selectedExtensions.includes(extension) && styles.qualityButtonSelected
+                  ]}
+                  onPress={() => toggleExtension(extension)}
+                >
+                  <Text 
+                    style={[
+                      styles.qualityButtonText,
+                      selectedExtensions.includes(extension) && styles.qualityButtonTextSelected
+                    ]}
+                  >
+                    {extension}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         </View>
 
         <View style={styles.keyboardArea}>
@@ -293,7 +239,6 @@ export default function PlayScreen() {
           <Keyboard octave={octave} onNotePress={handleNotePress} />
         </View>
       </View>
-      
     </SafeAreaView>
   );
 }
@@ -362,34 +307,43 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   chordQualityContainer: {
-    marginBottom: 15, 
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    backgroundColor: '#000',
+    paddingVertical: 15,
+    borderRadius: 12,
   },
-  chordQualitySelector: {
+  qualitySection: {
+    marginBottom: 15,
+  },
+  qualitySelector: {
     flexDirection: 'row',
-    alignItems: 'center', 
-    paddingVertical: 10,
+    justifyContent: 'space-between',
+    gap: 10,
   },
   qualityButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 10, 
-    borderRadius: 18,      
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    marginHorizontal: 4,   
-    height: 38,            
+    width: '23%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#333',
+    backgroundColor: '#1C1C1E',
     justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
   qualityButtonSelected: {
-    backgroundColor: '#007AFF',
+    borderColor: '#E89D45',
+    backgroundColor: '#E89D45',
   },
   qualityButtonText: {
-    color: '#007AFF',
-    fontSize: 12,         
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
   },
   qualityButtonTextSelected: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#fff',
   },
   keyboardArea: {
     // This will contain octave controls and keyboard
