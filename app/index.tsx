@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useMidi } from '../../contexts/MidiContext';
+import { useMidi } from '../contexts/MidiContext';
 import {
-  ExtensionType,
-  MusicalNoteWithOctave,
-  TriadType,
-  chordToMidiNotes,
-  getChordInfo
-} from '../../utils/chords';
+    ExtensionType,
+    MusicalNoteWithOctave,
+    TriadType,
+    chordToMidiNotes,
+    getChordInfo
+} from '../utils/chords';
 
 async function playNotesAsync(keyboard: any, midiNotes: number[], velocity: number, duration: number) {
   if (midiNotes.length === 0) return;
@@ -156,11 +157,9 @@ export default function PlayScreen() {
         </Text>
         <Pressable 
           style={styles.deviceButton}
-          onPress={() => {
-            // User can manually navigate to the device tab
-          }}
+          onPress={() => router.push('/device-modal')}
         >
-          <Text style={styles.deviceButtonText}>Go to Device Tab</Text>
+          <Text style={styles.deviceButtonText}>Connect Device</Text>
         </Pressable>
       </SafeAreaView>
     );

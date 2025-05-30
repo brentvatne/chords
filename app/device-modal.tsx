@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from 'expo-router';
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useMidi } from '../../contexts/MidiContext';
+import { useMidi } from '../contexts/MidiContext';
 
-export default function DeviceScreen() {
+export default function DeviceModal() {
   const { devices, connectedDevice, connectToDevice, disconnect, refreshDevices } = useMidi();
 
   const handleConnect = async (deviceId: string) => {
@@ -11,6 +12,9 @@ export default function DeviceScreen() {
       const success = await connectToDevice(deviceId);
       if (!success) {
         Alert.alert("Connection Failed", "Failed to connect to the device");
+      } else {
+        // Automatically close modal after successful connection
+        router.back();
       }
     } catch {
       Alert.alert("Connection Failed", "Failed to connect to the device");
