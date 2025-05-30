@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import Color from "color";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -8,14 +7,16 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { useMidi } from "../contexts/MidiContext";
+import { Keyboard } from "./components/Keyboard";
 import {
+  CHORD_QUALITY_DESCRIPTIONS,
+  EXTENSION_DESCRIPTIONS,
   ExtensionType,
   MusicalNoteWithOctave,
   TriadType,
   chordToMidiNotes,
   getChordInfo,
-} from "../utils/chords";
-import { getNoteWithoutOctave, isNoteInKey } from "../utils/keys";
+} from "./utils/chords";
 
 async function playNotesAsync(
   keyboard: any,
@@ -32,108 +33,6 @@ async function playNotesAsync(
       await keyboard.releaseNote(note);
     }
   }, duration);
-}
-
-interface KeyboardProps {
-  octave: number;
-  onNotePress: (note: string) => void;
-  selectedKey: string | null;
-}
-
-function Keyboard({ octave, onNotePress, selectedKey }: KeyboardProps) {
-  const whiteKeys = ["C", "D", "E", "F", "G", "A", "B", "C"]; // Always show 8 keys
-  const [keyboardWidth, setKeyboardWidth] = useState(0);
-
-  const whiteKeyWidth =
-    keyboardWidth > 0 ? keyboardWidth / whiteKeys.length : 0;
-
-  const blackKeyPositions = [
-    { note: "C#", offsetFactor: 1, octaveOffset: 0 },
-    { note: "D#", offsetFactor: 2, octaveOffset: 0 },
-    { note: "F#", offsetFactor: 4, octaveOffset: 0 },
-    { note: "G#", offsetFactor: 5, octaveOffset: 0 },
-    { note: "A#", offsetFactor: 6, octaveOffset: 0 },
-    { note: "C#", offsetFactor: 8, octaveOffset: 1 }, // Always show, but may be disabled
-  ];
-
-  const isNoteDisabled = (note: string, keyOctave: number) => {
-    // First check if octave is out of range
-    if (keyOctave > 8) return true;
-
-    // If no key is selected, all notes are enabled
-    if (!selectedKey) return false;
-
-    // Check if the note is in the selected key
-    return !isNoteInKey(getNoteWithoutOctave(note), selectedKey as any);
-  };
-
-  return (
-    <View
-      style={styles.keyboard}
-      onLayout={(event) => {
-        setKeyboardWidth(event.nativeEvent.layout.width);
-      }}
-    >
-      {/* White keys */}
-      <View style={styles.whiteKeysContainer}>
-        {whiteKeys.map((note, index) => {
-          // For the last C key (index 7), use the next octave
-          const keyOctave = note === "C" && index === 7 ? octave + 1 : octave;
-          const noteWithOctave = `${note}${keyOctave}`;
-          const isDisabled = isNoteDisabled(noteWithOctave, keyOctave);
-
-          return (
-            <Pressable
-              key={`${note}-${index}`} // Use index to differentiate the two C keys
-              style={[styles.whiteKey, isDisabled && styles.whiteKeyDisabled]}
-              onPress={
-                isDisabled ? undefined : () => onNotePress(noteWithOctave)
-              }
-              disabled={isDisabled}
-            >
-              <View style={styles.keyLabelContainer}>
-                {note === "C" && !isDisabled && (
-                  <Text style={styles.octaveText}>{keyOctave}</Text>
-                )}
-                {!isDisabled && <Text style={styles.whiteKeyText}>{note}</Text>}
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Black keys */}
-      {keyboardWidth > 0 && (
-        <View style={styles.blackKeysContainer}>
-          {blackKeyPositions.map(({ note, offsetFactor, octaveOffset }) => {
-            const keyOctave = octave + octaveOffset;
-            const noteWithOctave = `${note}${keyOctave}`;
-            const isDisabled = isNoteDisabled(noteWithOctave, keyOctave);
-
-            return (
-              <Pressable
-                key={`${note}-${octaveOffset}`} // Make key unique for multiple C# keys
-                style={[
-                  styles.blackKey,
-                  {
-                    left:
-                      whiteKeyWidth * offsetFactor - styles.blackKey.width / 2,
-                  },
-                  isDisabled && styles.blackKeyDisabled,
-                ]}
-                onPress={
-                  isDisabled ? undefined : () => onNotePress(noteWithOctave)
-                }
-                disabled={isDisabled}
-              >
-                {!isDisabled && <Text style={styles.blackKeyText}>{note}</Text>}
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-    </View>
-  );
 }
 
 const TRIAD_TYPES: TriadType[] = ["dim", "minor", "major", "sus"];
@@ -281,21 +180,27 @@ export default function PlayScreen() {
                     ]}
                     onPress={() => setSelectedTriad(triad)}
                   >
-                    <Text
-                      style={[
-                        styles.qualityButtonText,
-                        selectedTriad === triad &&
-                          styles.qualityButtonTextSelected,
-                      ]}
-                    >
-                      {triad === "dim"
-                        ? "Dim"
-                        : triad === "minor"
-                          ? "Min"
-                          : triad === "major"
-                            ? "Maj"
-                            : "Sus"}
-                    </Text>
+                    <View style={styles.qualityButtonContent}>
+                      <Text
+                        style={[
+                          styles.qualityButtonText,
+                          selectedTriad === triad &&
+                            styles.qualityButtonTextSelected,
+                        ]}
+                      >
+                        {CHORD_QUALITY_DESCRIPTIONS[triad].shortName}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.qualityButtonDescription,
+                          selectedTriad === triad &&
+                            styles.qualityButtonDescriptionSelected,
+                        ]}
+                        numberOfLines={3}
+                      >
+                        {CHORD_QUALITY_DESCRIPTIONS[triad].description}
+                      </Text>
+                    </View>
                   </Pressable>
                 ))}
               </View>
@@ -313,15 +218,27 @@ export default function PlayScreen() {
                     ]}
                     onPress={() => toggleExtension(extension)}
                   >
-                    <Text
-                      style={[
-                        styles.qualityButtonText,
-                        selectedExtensions.includes(extension) &&
-                          styles.qualityButtonTextSelected,
-                      ]}
-                    >
-                      {extension}
-                    </Text>
+                    <View style={styles.qualityButtonContent}>
+                      <Text
+                        style={[
+                          styles.qualityButtonText,
+                          selectedExtensions.includes(extension) &&
+                            styles.qualityButtonTextSelected,
+                        ]}
+                      >
+                        {EXTENSION_DESCRIPTIONS[extension].shortName}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.qualityButtonDescription,
+                          selectedExtensions.includes(extension) &&
+                            styles.qualityButtonDescriptionSelected,
+                        ]}
+                        numberOfLines={3}
+                      >
+                        {EXTENSION_DESCRIPTIONS[extension].description}
+                      </Text>
+                    </View>
                   </Pressable>
                 ))}
               </View>
@@ -332,8 +249,9 @@ export default function PlayScreen() {
             <View style={styles.keyboardControls}>
               <View style={styles.octaveStepper}>
                 <Pressable
-                  style={[
+                  style={({ pressed }) => [
                     styles.stepperButton,
+                    pressed && { opacity: 0.5 },
                     octave <= 1 && styles.stepperButtonDisabled,
                   ]}
                   onPress={() => setOctave(Math.max(1, octave - 1))}
@@ -369,7 +287,10 @@ export default function PlayScreen() {
               </View>
 
               <Pressable
-                style={styles.keyButton}
+                style={({ pressed }) => [
+                  styles.keyButton,
+                  pressed && { opacity: 0.5 },
+                ]}
                 onPress={() => {
                   router.navigate("/key-modal");
                 }}
@@ -515,23 +436,38 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "#404040",
-    backgroundColor: "#2A2A2A", // Dark gray like inactive buttons
+    backgroundColor: "#2A2A2A",
+    overflow: "hidden",
+    padding: 10,
+  },
+  qualityButtonContent: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    overflow: "hidden",
   },
   qualityButtonSelected: {
     borderColor: "#E89D45",
-    backgroundColor: "#E89D45", // Warm orange for selected
+    backgroundColor: "#E89D45",
   },
   qualityButtonText: {
-    color: "#F5F1E8", // Cream text
-    fontSize: 16,
+    color: "#F5F1E8",
+    fontSize: 20,
     fontWeight: "600",
     textAlign: "center",
+    marginBottom: 8,
   },
   qualityButtonTextSelected: {
-    color: "#1C1C1E", // Dark text on orange background
+    color: "#1C1C1E",
+  },
+  qualityButtonDescription: {
+    color: "#999",
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 14,
+  },
+  qualityButtonDescriptionSelected: {
+    color: "#1C1C1E",
+    opacity: 0.7,
   },
   keyboardArea: {
     // This will contain octave controls and keyboard
@@ -590,77 +526,5 @@ const styles = StyleSheet.create({
     color: "#E89D45",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  keyboard: {
-    height: 220,
-    marginHorizontal: 0,
-    position: "relative",
-    borderRadius: 8,
-    overflow: "hidden",
-    borderWidth: 2,
-    borderColor: "#D4C4A8", // Warm beige border
-  },
-  whiteKeysContainer: {
-    flexDirection: "row",
-    height: "100%",
-  },
-  whiteKey: {
-    flex: 1,
-    backgroundColor: "#FEFCF8",
-    borderWidth: 1,
-    borderColor: "#D4C4A8",
-    borderRadius: 5,
-    justifyContent: "flex-end",
-    alignItems: "center",
-    paddingBottom: 10,
-    marginHorizontal: 1,
-  },
-  whiteKeyText: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#2A2A2A", // Dark gray
-  },
-  octaveText: {
-    fontSize: 11,
-    color: "#8A7B6B", // Muted brown
-    fontWeight: "600",
-    marginBottom: 2, // Small gap between octave and note
-  },
-  blackKeysContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "60%",
-  },
-  blackKey: {
-    position: "absolute",
-    width: 28,
-    height: "100%",
-    backgroundColor: "#1C1C1E",
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "#0A0A0A",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    paddingBottom: 8,
-    zIndex: 1,
-  },
-  blackKeyText: {
-    color: "#F5F1E8", // Cream text
-    fontSize: 11,
-    fontWeight: "bold",
-    marginBottom: 2,
-  },
-  keyLabelContainer: {
-    alignItems: "center",
-  },
-  whiteKeyDisabled: {
-    backgroundColor: Color("#FEFCF8").darken(0.1).hex(),
-    borderColor: Color("#D4C4A8").darken(0.1).hex(),
-  },
-  blackKeyDisabled: {
-    backgroundColor: Color("#1C1C1E").lighten(1.5).hex(),
-    borderColor: Color("#0A0A0A").lighten(1.5).hex(),
   },
 });

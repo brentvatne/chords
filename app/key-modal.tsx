@@ -12,7 +12,10 @@ export default function KeyModal() {
           {NOTES.map((note) => (
             <Pressable
               key={note}
-              style={styles.keyButton}
+              style={({ pressed }) => [
+                styles.keyButton,
+                pressed && { opacity: 0.5 },
+              ]}
               onPress={() => {
                 router.replace({
                   pathname: "/",
