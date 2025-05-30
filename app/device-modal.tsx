@@ -1,249 +1,173 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from 'expo-router';
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useCallback } from 'react';
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useMidi } from '../contexts/MidiContext';
 
 export default function DeviceModal() {
-  const { devices, connectedDevice, connectToDevice, disconnect, refreshDevices } = useMidi();
+  const { devices, connectedDevice, connectToDevice, disconnectFromDevice, refreshDevices } = useMidi();
 
-  const handleConnect = async (deviceId: string) => {
-    try {
-      const success = await connectToDevice(deviceId);
-      if (!success) {
-        Alert.alert("Connection Failed", "Failed to connect to the device");
-      } else {
-        // Automatically close modal after successful connection
-        router.back();
-      }
-    } catch {
-      Alert.alert("Connection Failed", "Failed to connect to the device");
-    }
-  };
-
-  const handleDisconnect = async () => {
-    try {
-      await disconnect();
-    } catch {
-      Alert.alert("Disconnect Failed", "Failed to disconnect from device");
-    }
-  };
+  const handleRefresh = useCallback(() => {
+    refreshDevices();
+  }, [refreshDevices]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.content}>
         {connectedDevice && (
-          <View style={styles.connectedDeviceContainer}>
-            <Text style={styles.connectedDeviceTitle}>
-              Connected Device
-            </Text>
-            <Text style={styles.connectedDeviceName}>
-              {connectedDevice.name}
-            </Text>
-            <Pressable style={styles.disconnectButton} onPress={handleDisconnect}>
+          <View style={styles.connectedSection}>
+            <Text style={styles.sectionTitle}>Connected Device</Text>
+            <View style={styles.deviceRow}>
+              <Text style={styles.deviceName}>{connectedDevice.name}</Text>
+              <Ionicons 
+                name="checkmark-circle-sharp" 
+                size={12} 
+                color="#32D74B" 
+                style={styles.connectedIcon}
+              />
+            </View>
+            <Pressable 
+              style={styles.disconnectButton}
+              onPress={() => {
+                disconnectFromDevice();
+                router.back();
+              }}
+            >
               <Text style={styles.disconnectButtonText}>Disconnect</Text>
             </Pressable>
           </View>
         )}
 
-        <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>
-            Available Devices ({devices.length})
-          </Text>
-          <Pressable 
-            onPress={refreshDevices} 
-            style={styles.refreshButton}
-          >
-            <Ionicons name="refresh" size={20} color="#E89D45" />
-          </Pressable>
-        </View>
+        <View style={styles.availableSection}>
+          <View style={styles.availableHeader}>
+            <Text style={styles.sectionTitle}>Available Devices ({devices.length})</Text>
+            <Pressable 
+              style={styles.refreshButton}
+              onPress={handleRefresh}
+            >
+              <Ionicons name="refresh" size={20} color="#E89D45" />
+            </Pressable>
+          </View>
 
-        {devices.length > 0 ? (
-          <View>
-            {devices.map((device) => {
-              const isConnected = connectedDevice?.id === device.id;
-              return (
-                <View 
-                  key={device.id} 
-                  style={[
-                    styles.deviceCard,
-                    isConnected && styles.deviceCardConnected
-                  ]}
-                >
-                  <View style={styles.deviceCardContent}>
-                    <View style={styles.deviceInfo}>
-                      <Text style={[
-                        styles.deviceName,
-                        isConnected && styles.deviceNameConnected
-                      ]}>
-                        {device.name}
-                      </Text>
-                      <Text style={styles.deviceId}>
-                        ID: {device.id}
-                      </Text>
-                      {isConnected && (
-                        <Text style={styles.connectedStatus}>
-                          ✓ Connected
-                        </Text>
-                      )}
-                    </View>
-                    
-                    {!isConnected && (
-                      <Pressable 
-                        style={styles.connectButton}
-                        onPress={() => handleConnect(device.id)}
-                      >
-                        <Text style={styles.connectButtonText}>Connect</Text>
-                      </Pressable>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        ) : (
-          <View style={styles.noDevicesContainer}>
-            <Ionicons name="musical-note" size={64} color="#8A7B6B" style={styles.noDevicesIcon} />
-            <Text style={styles.noDevicesText}>
-              No MIDI devices found
-            </Text>
-            <Text style={styles.noDevicesSubtext}>
-              Make sure your MIDI device is connected and try refreshing
-            </Text>
-          </View>
-        )}
+          {devices.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="musical-note" size={40} color="#8A7B6B" />
+              <Text style={styles.emptyTitle}>No MIDI devices found</Text>
+              <Text style={styles.emptyText}>Make sure your MIDI device is connected and try refreshing</Text>
+            </View>
+          ) : (
+            devices.map(device => (
+              <Pressable
+                key={device.id}
+                style={styles.deviceItem}
+                onPress={() => {
+                  connectToDevice(device);
+                  router.back();
+                }}
+              >
+                <Text style={styles.deviceName}>{device.name}</Text>
+              </Pressable>
+            ))
+          )}
+        </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F1E8', // Cream/beige like keyboard body
+    backgroundColor: '#1C1C1E',
   },
   content: {
-    flex: 1,
-    padding: 20,
+    paddingVertical: 16,
+    paddingBottom: 32,
   },
-  connectedDeviceContainer: {
-    backgroundColor: '#E8F5E8', // Light green for connected state
-    padding: 15,
+  connectedSection: {
+    backgroundColor: '#2A2A2A',
+    marginHorizontal: 16,
+    padding: 16,
     borderRadius: 12,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#4CAF50',
+    marginBottom: 24,
   },
-  connectedDeviceTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#2E7D32',
-  },
-  connectedDeviceName: {
-    fontSize: 14,
-    marginBottom: 10,
-    color: '#388E3C',
-  },
-  disconnectButton: {
-    backgroundColor: '#FF4444',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  disconnectButtonText: {
-    color: '#F5F1E8',
-    fontWeight: 'bold',
-  },
-  headerContainer: {
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "center", 
-    marginBottom: 20,
-  },
-  headerText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: '#2A2A2A',
-  },
-  refreshButton: {
-    padding: 8,
-    backgroundColor: "#1C1C1E", // Black like control panel
-    borderRadius: 8,
+  connectedHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
+    marginBottom: 8,
   },
-  deviceCard: {
-    padding: 15,
-    borderWidth: 2,
-    borderColor: '#D4C4A8', // Warm beige
-    borderRadius: 12,
-    marginBottom: 10,
-    backgroundColor: '#FEFCF8', // Slightly warmer white
+  connectedIcon: {
+    marginLeft: 4,
+    opacity: 0.9,
   },
-  deviceCardConnected: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#F0F8F0',
+  availableSection: {
+    paddingHorizontal: 16,
   },
-  deviceCardContent: {
+  availableHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  deviceInfo: {
-    flex: 1,
+  sectionTitle: {
+    color: '#F5F1E8',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.4,
+    marginBottom: 6,
+  },
+  deviceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   deviceName: {
+    color: '#F5F1E8',
     fontSize: 16,
-    fontWeight: 'normal',
-    marginBottom: 4,
-    color: '#2A2A2A',
+    opacity: 0.9,
+    letterSpacing: -0.2,
   },
-  deviceNameConnected: {
-    fontWeight: 'bold',
-    color: '#2E7D32',
-  },
-  deviceId: {
-    fontSize: 12,
-    color: '#8A7B6B', // Muted brown
-  },
-  connectedStatus: {
-    fontSize: 12,
-    color: '#4CAF50',
-    marginTop: 4,
-    fontWeight: '600',
-  },
-  connectButton: {
-    backgroundColor: '#E89D45', // Warm orange
-    paddingHorizontal: 16,
+  disconnectButton: {
+    backgroundColor: 'transparent',
     paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 0,
+    alignSelf: 'flex-start',
+    marginTop: 12,
   },
-  connectButtonText: {
-    color: '#F5F1E8', // Cream text
-    fontWeight: 'bold',
+  disconnectButtonText: {
+    color: '#FF453A',
+    fontSize: 17,
+    fontWeight: '400',
   },
-  noDevicesContainer: {
-    flex: 1,
+  refreshButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#2A2A2A',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 100,
   },
-  noDevicesIcon: {
-    marginBottom: 20,
-  },
-  noDevicesText: {
-    fontSize: 16,
-    color: '#6B5B47', // Warm brown
-    textAlign: 'center',
+  deviceItem: {
+    backgroundColor: '#2A2A2A',
+    padding: 12,
+    borderRadius: 8,
     marginBottom: 8,
   },
-  noDevicesSubtext: {
-    fontSize: 14,
-    color: '#8A7B6B', // Muted brown
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyTitle: {
+    color: '#F5F1E8',
+    fontSize: 17,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: '#8A7B6B',
+    fontSize: 15,
     textAlign: 'center',
+    paddingHorizontal: 32,
   },
 }); 

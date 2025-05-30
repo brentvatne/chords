@@ -178,9 +178,26 @@ export default function PlayScreen() {
         <View style={[styles.header, { paddingTop: insets.top / 2 }]}>
           <Pressable 
             onPress={() => router.push('/device-modal')}
-            style={[styles.headerButton, { top: insets.top }]}
+            style={[styles.headerButton, { top: insets.top + 4 }]}
           >
-            <Ionicons name="hardware-chip-outline" size={24} color="#E89D45" />
+            <View style={styles.headerButtonContent}>
+              <Ionicons 
+                name="hardware-chip-outline" 
+                size={20} 
+                color="#E89D45" 
+                style={styles.chipIcon}
+              />
+              {connectedDevice && (
+                <View style={styles.connectionIndicator}>
+                  <Ionicons 
+                    name="checkmark-circle-sharp" 
+                    size={11} 
+                    color="#4CAF50" 
+                    style={styles.connectionIcon}
+                  />
+                </View>
+              )}
+            </View>
           </Pressable>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>
@@ -351,10 +368,40 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   headerButton: {
-    padding: 8,
+    padding: 6,
     position: 'absolute',
     right: 16,
     top: 8,
+    backgroundColor: '#2A2A2A',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#3A3A3A',
+  },
+  headerButtonContent: {
+    position: 'relative',
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipIcon: {
+    opacity: 0.9,
+  },
+  connectionIndicator: {
+    position: 'absolute',
+    right: -3,
+    top: -3,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 6,
+    padding: 1,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  connectionIcon: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 1,
   },
   controlsArea: {
     flex: 1, 
