@@ -1,96 +1,110 @@
 import * as Device from 'expo-device';
-import React, { createContext, useContext, useState } from 'react';
-
-export interface MidiDevice {
-  id: string;
-  name: string;
-}
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { MidiDevice, MidiKeyboard } from '../modules/simple-midi';
 
 interface MidiContextType {
   devices: MidiDevice[];
   connectedDevice: MidiDevice | null;
-  keyboard: any;
-  connectToDevice: (device: MidiDevice) => Promise<boolean>;
-  disconnectFromDevice: () => void;
-  refreshDevices: () => void;
+  keyboard: MidiKeyboard;
+  connectToDevice: (deviceId: string) => Promise<boolean>;
+  disconnect: () => Promise<void>;
+  refreshDevices: () => Promise<void>;
 }
 
-const MidiContext = createContext<MidiContextType | null>(null);
+const MidiContext = createContext<MidiContextType | undefined>(undefined);
 
-// Mock device for simulator
-const mockDevice: MidiDevice = {
-  id: 'mock',
-  name: 'Mock Device',
-};
+export const keyboard = new MidiKeyboard();
 
-const mockKeyboard = {
-  playNote: async (note: number, velocity: number) => {
-    console.log(`Playing note ${note} with velocity ${velocity}`);
-  },
-  releaseNote: async (note: number) => {
-    console.log(`Releasing note ${note}`);
-  },
-};
+const USE_MOCK_DEVICE = false;
 
 export function MidiProvider({ children }: { children: React.ReactNode }) {
   const [devices, setDevices] = useState<MidiDevice[]>([]);
   const [_connectedDevice, _setConnectedDevice] = useState<MidiDevice | null>(null);
-  const [_keyboard, _setKeyboard] = useState<any>(null);
 
-  // In simulator, always use mock device
-  const connectedDevice = _connectedDevice
-  // const connectedDevice = Device.isDevice ? _connectedDevice : mockDevice;
-  const keyboard = _keyboard;
-  // const keyboard = Device.isDevice ? _keyboard : mockKeyboard;
+  // Mock device for simulator
+  const mockDevice = {
+    id: 'mock',
+    name: 'Mock Device',
+    isConnected: true,
+  };
 
-  const refreshDevices = () => {
-    if (Device.isDevice) {
-      // Real device implementation would go here
-      setDevices([]);
-    } else {
-      // In simulator, always show mock device
-      setDevices([mockDevice]);
+  const connectedDevice = Device.isDevice ? _connectedDevice : mockDevice;
+
+  const fetchDevices = async () => {
+    try {
+      console.log('Fetching MIDI devices...');
+      const devices = await keyboard.getDevices();
+      console.log('Found MIDI devices:', devices);
+      setDevices(devices);
+    } catch (error) {
+      console.error('Error fetching MIDI devices:', error);
     }
   };
 
-  const connectToDevice = async (device: MidiDevice): Promise<boolean> => {
-    if (Device.isDevice) {
-      // Real device implementation would go here
-      _setConnectedDevice(device);
-      _setKeyboard({
-        playNote: async (note: number, velocity: number) => {
-          console.log(`Playing note ${note} with velocity ${velocity}`);
-        },
-        releaseNote: async (note: number) => {
-          console.log(`Releasing note ${note}`);
-        },
-      });
-      return true;
-    } else {
-      // In simulator, always succeed with mock device
-      return true;
+  const connectToDevice = async (deviceId: string) => {
+    try {
+      console.log('Attempting to connect to device:', deviceId);
+      const connected = await keyboard.connect(deviceId);
+      console.log('Connection result:', connected);
+      if (connected) {
+        const device = devices.find(d => d.id === deviceId);
+        if (device) {
+          _setConnectedDevice(device);
+        }
+      }
+      return connected;
+    } catch (error) {
+      console.error('Error connecting to device:', error);
+      return false;
     }
   };
 
-  const disconnectFromDevice = () => {
-    if (Device.isDevice) {
+  const disconnect = async () => {
+    try {
+      await keyboard.disconnect();
       _setConnectedDevice(null);
-      _setKeyboard(null);
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+      throw error;
     }
-    // In simulator, do nothing - mock device stays connected
+  };
+
+  useEffect(() => {
+    console.log('MidiContext initializing...');
+    fetchDevices();
+
+    keyboard.addDeviceListener(
+      (deviceId, deviceName) => {
+        console.log('Device connected:', deviceId, deviceName);
+        fetchDevices();
+      },
+      (deviceId, deviceName) => {
+        console.log('Device disconnected:', deviceId, deviceName);
+        fetchDevices();
+      },
+      (devices) => {
+        console.log('Devices changed:', devices);
+        setDevices(devices);
+      }
+    );
+
+    return () => {
+      console.log('MidiContext cleaning up...');
+      keyboard.disconnect();
+    };
+  }, []);
+
+  const value: MidiContextType = {
+    devices,
+    connectedDevice,
+    keyboard,
+    connectToDevice,
+    disconnect,
+    refreshDevices: fetchDevices
   };
 
   return (
-    <MidiContext.Provider 
-      value={{ 
-        devices, 
-        connectedDevice, 
-        keyboard,
-        connectToDevice,
-        disconnectFromDevice,
-        refreshDevices,
-      }}
-    >
+    <MidiContext.Provider value={value}>
       {children}
     </MidiContext.Provider>
   );
@@ -98,7 +112,7 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
 
 export function useMidi() {
   const context = useContext(MidiContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useMidi must be used within a MidiProvider');
   }
   return context;

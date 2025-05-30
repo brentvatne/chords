@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useMidi } from '../contexts/MidiContext';
 
 export default function DeviceModal() {
-  const { devices, connectedDevice, connectToDevice, disconnectFromDevice, refreshDevices } = useMidi();
+  const { devices, connectedDevice, connectToDevice, disconnect, refreshDevices } = useMidi();
 
   const handleRefresh = useCallback(() => {
     refreshDevices();
@@ -29,7 +29,7 @@ export default function DeviceModal() {
             <Pressable 
               style={styles.disconnectButton}
               onPress={() => {
-                disconnectFromDevice();
+                disconnect();
                 router.back();
               }}
             >
@@ -61,7 +61,7 @@ export default function DeviceModal() {
                 key={device.id}
                 style={styles.deviceItem}
                 onPress={() => {
-                  connectToDevice(device);
+                  connectToDevice(device.id);
                   router.back();
                 }}
               >
