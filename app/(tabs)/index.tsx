@@ -29,17 +29,18 @@ interface KeyboardProps {
 }
 
 function Keyboard({ octave, onNotePress }: KeyboardProps) {
-  const whiteKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+  const whiteKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C']; // Always show 8 keys
   const [keyboardWidth, setKeyboardWidth] = useState(0);
 
   const whiteKeyWidth = keyboardWidth > 0 ? keyboardWidth / whiteKeys.length : 0;
 
   const blackKeyPositions = [
-    { note: 'C#', offsetFactor: 1 }, 
-    { note: 'D#', offsetFactor: 2 }, 
-    { note: 'F#', offsetFactor: 4 }, 
-    { note: 'G#', offsetFactor: 5 }, 
-    { note: 'A#', offsetFactor: 6 }, 
+    { note: 'C#', offsetFactor: 1, octaveOffset: 0 }, 
+    { note: 'D#', offsetFactor: 2, octaveOffset: 0 }, 
+    { note: 'F#', offsetFactor: 4, octaveOffset: 0 }, 
+    { note: 'G#', offsetFactor: 5, octaveOffset: 0 }, 
+    { note: 'A#', offsetFactor: 6, octaveOffset: 0 }, 
+    { note: 'C#', offsetFactor: 8, octaveOffset: 1 }, // Always show, but may be disabled
   ];
 
   return (
@@ -51,35 +52,50 @@ function Keyboard({ octave, onNotePress }: KeyboardProps) {
     >
       {/* White keys */}
       <View style={styles.whiteKeysContainer}>
-        {whiteKeys.map((note) => (
-          <Pressable
-            key={note}
-            style={styles.whiteKey}
-            onPress={() => onNotePress(`${note}${octave}`)}
-          >
-            <View style={styles.keyLabelContainer}>
-              {note === 'C' && <Text style={styles.octaveText}>{octave}</Text>}
-              <Text style={styles.whiteKeyText}>{note}</Text>
-            </View>
-          </Pressable>
-        ))}
+        {whiteKeys.map((note, index) => {
+          // For the last C key (index 7), use the next octave
+          const keyOctave = (note === 'C' && index === 7) ? octave + 1 : octave;
+          const noteWithOctave = `${note}${keyOctave}`;
+          const isDisabled = keyOctave > 8; // Disable if octave would be > 8
+          
+          return (
+            <Pressable
+              key={`${note}-${index}`} // Use index to differentiate the two C keys
+              style={[styles.whiteKey, isDisabled && styles.whiteKeyDisabled]}
+              onPress={isDisabled ? undefined : () => onNotePress(noteWithOctave)}
+              disabled={isDisabled}
+            >
+              <View style={styles.keyLabelContainer}>
+                {note === 'C' && !isDisabled && <Text style={styles.octaveText}>{keyOctave}</Text>}
+                {!isDisabled && <Text style={styles.whiteKeyText}>{note}</Text>}
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
 
       {/* Black keys */}
       {keyboardWidth > 0 && (
         <View style={styles.blackKeysContainer}>
-          {blackKeyPositions.map(({ note, offsetFactor }) => (
-            <Pressable
-              key={note}
-              style={[
-                styles.blackKey,
-                { left: (whiteKeyWidth * offsetFactor) - (styles.blackKey.width / 2) }, 
-              ]}
-              onPress={() => onNotePress(`${note}${octave}`)}
-            >
-              <Text style={styles.blackKeyText}>{note}</Text>
-            </Pressable>
-          ))}
+          {blackKeyPositions.map(({ note, offsetFactor, octaveOffset }) => {
+            const keyOctave = octave + octaveOffset;
+            const isDisabled = keyOctave > 8; // Disable if octave would be > 8
+            
+            return (
+              <Pressable
+                key={`${note}-${octaveOffset}`} // Make key unique for multiple C# keys
+                style={[
+                  styles.blackKey,
+                  { left: (whiteKeyWidth * offsetFactor) - (styles.blackKey.width / 2) },
+                  isDisabled && styles.blackKeyDisabled,
+                ]}
+                onPress={isDisabled ? undefined : () => onNotePress(`${note}${keyOctave}`)}
+                disabled={isDisabled}
+              >
+                {!isDisabled && <Text style={styles.blackKeyText}>{note}</Text>}
+              </Pressable>
+            );
+          })}
         </View>
       )}
     </View>
@@ -447,5 +463,15 @@ const styles = StyleSheet.create({
   },
   keyLabelContainer: {
     alignItems: 'center',
+  },
+  whiteKeyDisabled: {
+    backgroundColor: '#F0EDE6', // Very subtle faded cream
+    opacity: 0.5,
+    borderColor: '#E0DAD0', // Faded border
+  },
+  blackKeyDisabled: {
+    backgroundColor: '#3A3A3A', // Lighter faded black
+    opacity: 0.4,
+    borderColor: '#2A2A2A', // Subtle border
   },
 }); 
