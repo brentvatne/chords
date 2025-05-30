@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import Color from "color";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   SafeAreaView,
@@ -141,12 +141,14 @@ const EXTENSION_TYPES: ExtensionType[] = ["6", "m7", "M7", "9"];
 
 export default function PlayScreen() {
   const { selectedKey } = useLocalSearchParams<{ selectedKey: string }>();
-  const { connectedDevice, keyboard } = useMidi();
+  const { connectedDevice, keyboard, devices, connectToDevice } = useMidi();
   const [octave, setOctave] = useState(4);
   const [selectedTriad, setSelectedTriad] = useState<TriadType>("major");
   const [selectedExtensions, setSelectedExtensions] = useState<ExtensionType[]>(
     [],
   );
+
+  const hasAttemptedAutoConnect = useRef(false);
   const [currentChordInfo, setCurrentChordInfo] = useState<{
     name: string;
     notes: string[];
@@ -192,6 +194,20 @@ export default function PlayScreen() {
     );
   };
 
+  useEffect(() => {
+    if (devices.length > 0) {
+      hasAttemptedAutoConnect.current = true;
+    }
+
+    if (
+      !hasAttemptedAutoConnect.current &&
+      !connectedDevice &&
+      devices.length === 1
+    ) {
+      connectToDevice(devices[0].id);
+    }
+  }, [connectedDevice, devices, connectToDevice]);
+
   if (!connectedDevice) {
     return (
       <SafeAreaView style={styles.noDeviceContainer}>
@@ -201,7 +217,7 @@ export default function PlayScreen() {
         </Text>
         <Pressable
           style={styles.deviceButton}
-          onPress={() => router.push("device-modal")}
+          onPress={() => router.navigate("/device-modal")}
         >
           <Text style={styles.deviceButtonText}>Connect Device</Text>
         </Pressable>
@@ -214,21 +230,25 @@ export default function PlayScreen() {
       <View style={styles.content}>
         <View style={[styles.header, { paddingTop: insets.top / 2 }]}>
           <Pressable
-            onPress={() => router.push("/device-modal")}
-            style={[styles.headerButton, { top: insets.top + 4 }]}
+            onPress={() => router.navigate("/device-modal")}
+            style={({ pressed }) => [
+              styles.headerButton,
+              { top: insets.top + 4 },
+              pressed && { opacity: 0.5 },
+            ]}
           >
             <View style={styles.headerButtonContent}>
               <Ionicons
                 name="hardware-chip-outline"
-                size={20}
-                color="#E89D45"
+                size={25}
+                color="#eee"
                 style={styles.chipIcon}
               />
               {connectedDevice && (
                 <View style={styles.connectionIndicator}>
                   <Ionicons
                     name="checkmark-circle-sharp"
-                    size={11}
+                    size={15}
                     color="#4CAF50"
                     style={styles.connectionIcon}
                   />
@@ -351,7 +371,7 @@ export default function PlayScreen() {
               <Pressable
                 style={styles.keyButton}
                 onPress={() => {
-                  router.push("/key-modal");
+                  router.navigate("/key-modal");
                 }}
               >
                 <Text style={styles.keyButtonText}>
@@ -444,8 +464,8 @@ const styles = StyleSheet.create({
   },
   headerButtonContent: {
     position: "relative",
-    width: 20,
-    height: 20,
+    width: 25,
+    height: 25,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -454,8 +474,8 @@ const styles = StyleSheet.create({
   },
   connectionIndicator: {
     position: "absolute",
-    right: -3,
-    top: -3,
+    right: -10,
+    top: -10,
     backgroundColor: "#1C1C1E",
     borderRadius: 6,
     padding: 1,

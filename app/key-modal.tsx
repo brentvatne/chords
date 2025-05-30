@@ -1,37 +1,39 @@
 import { router } from "expo-router";
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 export default function KeyModal() {
   return (
-    <View style={styles.container}>
-      <View style={styles.keyGrid}>
-        {NOTES.map((note) => (
+    <ScrollView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <View style={styles.keyGrid}>
+          {NOTES.map((note) => (
+            <Pressable
+              key={note}
+              style={styles.keyButton}
+              onPress={() => {
+                router.replace({
+                  pathname: "/",
+                  params: { selectedKey: note },
+                });
+              }}
+            >
+              <Text style={styles.keyButtonText}>{note}</Text>
+            </Pressable>
+          ))}
           <Pressable
-            key={note}
-            style={styles.keyButton}
+            style={[styles.keyButton, styles.clearButton]}
             onPress={() => {
-              router.replace({
-                pathname: "/",
-                params: { selectedKey: note },
-              });
+              router.replace("/");
             }}
           >
-            <Text style={styles.keyButtonText}>{note}</Text>
+            <Text style={styles.keyButtonText}>All</Text>
           </Pressable>
-        ))}
-        <Pressable
-          style={[styles.keyButton, styles.clearButton]}
-          onPress={() => {
-            router.replace("/");
-          }}
-        >
-          <Text style={styles.keyButtonText}>All</Text>
-        </Pressable>
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 

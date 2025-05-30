@@ -53,7 +53,7 @@ export default function RootLayout() {
                   onPress={() => router.back()}
                   style={({ pressed }) => [
                     styles.closeButton,
-                    pressed && { opacity: 0.7 },
+                    pressed && { opacity: 0.4 },
                   ]}
                 >
                   <Ionicons name="close" size={20} color="#E89D45" />
@@ -81,7 +81,7 @@ export default function RootLayout() {
                   onPress={() => router.back()}
                   style={({ pressed }) => [
                     styles.closeButton,
-                    pressed && { opacity: 0.7 },
+                    pressed && { opacity: 0.5 },
                   ]}
                 >
                   <Ionicons name="close" size={20} color="#E89D45" />

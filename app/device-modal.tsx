@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useMidi } from "../contexts/MidiContext";
 
@@ -17,43 +17,44 @@ export default function DeviceModal() {
     refreshDevices();
   }, [refreshDevices]);
 
-  useEffect(() => {
-    if (!connectedDevice && devices.length === 1) {
-      connectToDevice(devices[0].id);
-    }
-  }, [connectedDevice, devices, connectToDevice]);
-
   return (
     <View style={styles.container}>
       <View style={styles.content}>
         {connectedDevice && (
           <View style={styles.connectedSection}>
             <Text style={styles.sectionTitle}>Connected Device</Text>
-            <View style={styles.deviceRow}>
-              <Text style={styles.deviceName}>{connectedDevice.name}</Text>
-              <Ionicons
-                name="checkmark-circle-sharp"
-                size={12}
-                color="#32D74B"
-                style={styles.connectedIcon}
-              />
-            </View>
-            <Pressable
-              style={styles.disconnectButton}
-              onPress={() => {
-                disconnect();
-                router.back();
-              }}
+            <View
+              style={[styles.deviceRow, { justifyContent: "space-between" }]}
             >
-              <Text style={styles.disconnectButtonText}>Disconnect</Text>
-            </Pressable>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons
+                  name="checkmark-circle-sharp"
+                  size={16}
+                  color="#32D74B"
+                  style={styles.connectedIcon}
+                />
+                <Text style={styles.deviceName}>{connectedDevice.name}</Text>
+              </View>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.disconnectButton,
+                  pressed && { opacity: 0.5 },
+                ]}
+                onPress={() => {
+                  disconnect();
+                }}
+              >
+                <Text style={styles.disconnectButtonText}>Disconnect</Text>
+              </Pressable>
+            </View>
           </View>
         )}
 
         <View style={styles.availableSection}>
           <View style={styles.availableHeader}>
             <Text style={styles.sectionTitle}>
-              Available Devices ({devices.length})
+              All Devices ({devices.length})
             </Text>
             <Pressable style={styles.refreshButton} onPress={handleRefresh}>
               <Ionicons name="refresh" size={20} color="#E89D45" />
@@ -72,13 +73,20 @@ export default function DeviceModal() {
             devices.map((device) => (
               <Pressable
                 key={device.id}
-                style={styles.deviceItem}
+                style={[
+                  styles.deviceItem,
+                  device.id === connectedDevice?.id && { opacity: 0.5 },
+                ]}
                 onPress={() => {
                   connectToDevice(device.id);
-                  router.back();
+                  router.navigate("/");
                 }}
+                disabled={device.id === connectedDevice?.id}
               >
-                <Text style={styles.deviceName}>{device.name}</Text>
+                <Text style={styles.deviceName}>
+                  {device.name}
+                  {device.id === connectedDevice?.id && " (Connected)"}
+                </Text>
               </Pressable>
             ))
           )}
@@ -110,7 +118,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   connectedIcon: {
-    marginLeft: 4,
+    marginRight: 6,
     opacity: 0.9,
   },
   availableSection: {
@@ -124,7 +132,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: "#F5F1E8",
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "600",
     letterSpacing: -0.4,
     marginBottom: 6,
@@ -136,15 +144,18 @@ const styles = StyleSheet.create({
   },
   deviceName: {
     color: "#F5F1E8",
-    fontSize: 16,
+    fontSize: 18,
     opacity: 0.9,
     letterSpacing: -0.2,
   },
   disconnectButton: {
-    backgroundColor: "transparent",
-    paddingVertical: 8,
-    paddingHorizontal: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     alignSelf: "flex-start",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#3A3A3A",
     marginTop: 12,
   },
   disconnectButtonText: {
