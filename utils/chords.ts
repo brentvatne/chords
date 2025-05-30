@@ -316,18 +316,19 @@ function formatChordName(root: string, selection: ChordSelection): string {
   const rootName = Note.pitchClass(root);
   const parts: string[] = [rootName];
 
-  // Add triad quality
+  // Add triad quality with proper musical names
   switch (selection.triad) {
-    case 'minor': parts.push('m'); break;
-    case 'dim': parts.push('dim'); break;
-    case 'sus': parts.push('sus4'); break;
-    case 'major': 
-      // Only add M for major when there are extensions and it's not M7 (which is shown as M7, not M M7)
-      if (selection.extensions.length > 0 && 
-          !selection.extensions.includes('M7') &&
-          !(selection.extensions.length === 1 && selection.extensions[0] === '9')) {
-        parts.push('M');
-      }
+    case 'major':
+      parts.push('major');
+      break;
+    case 'minor':
+      parts.push('minor');
+      break;
+    case 'dim':
+      parts.push('diminished');
+      break;
+    case 'sus':
+      parts.push('suspended');
       break;
   }
 
@@ -339,11 +340,19 @@ function formatChordName(root: string, selection: ChordSelection): string {
 
   // Add extensions with proper formatting
   sortedExtensions.forEach(ext => {
-    if (ext === '9' && !selection.extensions.some(e => e === 'M7' || e === 'm7') && !selection.extensions.includes('6')) {
-      // Only use 'add9' when 9 is the only extension (and there's no 7th or 6th)
-      parts.push('add9');
-    } else {
-      parts.push(ext);
+    switch (ext) {
+      case 'M7':
+        parts.push('7th');
+        break;
+      case 'm7':
+        parts.push('7th');
+        break;
+      case '6':
+        parts.push('6th');
+        break;
+      case '9':
+        parts.push('9th');
+        break;
     }
   });
 

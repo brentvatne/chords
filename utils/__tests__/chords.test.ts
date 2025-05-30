@@ -194,13 +194,29 @@ describe('getChordInfo', () => {
   // Test chord name formatting
   test('formats chord names correctly', () => {
     const cases: [ChordSelection, string][] = [
-      [{ triad: 'major', extensions: ['M7', '9'] }, 'C M7 9'],
-      [{ triad: 'major', extensions: ['M7', '6'] }, 'C M7 6'],
-      [{ triad: 'minor', extensions: ['m7'] }, 'C m m7'],
-      [{ triad: 'sus', extensions: ['m7'] }, 'C sus4 m7'],
-      [{ triad: 'major', extensions: ['9'] }, 'C add9'],
-      [{ triad: 'major', extensions: ['6', '9'] }, 'C M 6 9'],
-      [{ triad: 'major', extensions: ['M7', '6', '9'] }, 'C M7 6 9'],
+      // Basic triads
+      [{ triad: 'major', extensions: [] }, 'C major'],
+      [{ triad: 'minor', extensions: [] }, 'C minor'],
+      [{ triad: 'dim', extensions: [] }, 'C diminished'],
+      [{ triad: 'sus', extensions: [] }, 'C suspended'],
+      
+      // Major chord extensions
+      [{ triad: 'major', extensions: ['M7'] }, 'C major 7th'],
+      [{ triad: 'major', extensions: ['M7', '9'] }, 'C major 7th 9th'],
+      [{ triad: 'major', extensions: ['M7', '6'] }, 'C major 7th 6th'],
+      [{ triad: 'major', extensions: ['6'] }, 'C major 6th'],
+      [{ triad: 'major', extensions: ['9'] }, 'C major 9th'],
+      [{ triad: 'major', extensions: ['6', '9'] }, 'C major 6th 9th'],
+      [{ triad: 'major', extensions: ['M7', '6', '9'] }, 'C major 7th 6th 9th'],
+      
+      // Minor chord extensions  
+      [{ triad: 'minor', extensions: ['m7'] }, 'C minor 7th'],
+      [{ triad: 'minor', extensions: ['m7', '9'] }, 'C minor 7th 9th'],
+      [{ triad: 'minor', extensions: ['6'] }, 'C minor 6th'],
+      
+      // Sus chord extensions
+      [{ triad: 'sus', extensions: ['m7'] }, 'C suspended 7th'],
+      [{ triad: 'sus', extensions: ['9'] }, 'C suspended 9th'],
     ];
 
     cases.forEach(([selection, expectedName]) => {
