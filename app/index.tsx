@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import {
   chordToMidiNotes,
   getChordInfo
 } from '../utils/chords';
+import { getNoteWithoutOctave, isNoteInKey } from '../utils/keys';
 
 async function playNotesAsync(keyboard: any, midiNotes: number[], velocity: number, duration: number) {
   if (midiNotes.length === 0) return;
@@ -27,9 +28,10 @@ async function playNotesAsync(keyboard: any, midiNotes: number[], velocity: numb
 interface KeyboardProps {
   octave: number;
   onNotePress: (note: string) => void;
+  selectedKey: string | null;
 }
 
-function Keyboard({ octave, onNotePress }: KeyboardProps) {
+function Keyboard({ octave, onNotePress, selectedKey }: KeyboardProps) {
   const whiteKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C']; // Always show 8 keys
   const [keyboardWidth, setKeyboardWidth] = useState(0);
 
@@ -44,6 +46,17 @@ function Keyboard({ octave, onNotePress }: KeyboardProps) {
     { note: 'C#', offsetFactor: 8, octaveOffset: 1 }, // Always show, but may be disabled
   ];
 
+  const isNoteDisabled = (note: string, keyOctave: number) => {
+    // First check if octave is out of range
+    if (keyOctave > 8) return true;
+    
+    // If no key is selected, all notes are enabled
+    if (!selectedKey) return false;
+
+    // Check if the note is in the selected key
+    return !isNoteInKey(getNoteWithoutOctave(note), selectedKey as any);
+  };
+
   return (
     <View 
       style={styles.keyboard}
@@ -57,7 +70,7 @@ function Keyboard({ octave, onNotePress }: KeyboardProps) {
           // For the last C key (index 7), use the next octave
           const keyOctave = (note === 'C' && index === 7) ? octave + 1 : octave;
           const noteWithOctave = `${note}${keyOctave}`;
-          const isDisabled = keyOctave > 8; // Disable if octave would be > 8
+          const isDisabled = isNoteDisabled(noteWithOctave, keyOctave);
           
           return (
             <Pressable
@@ -80,7 +93,8 @@ function Keyboard({ octave, onNotePress }: KeyboardProps) {
         <View style={styles.blackKeysContainer}>
           {blackKeyPositions.map(({ note, offsetFactor, octaveOffset }) => {
             const keyOctave = octave + octaveOffset;
-            const isDisabled = keyOctave > 8; // Disable if octave would be > 8
+            const noteWithOctave = `${note}${keyOctave}`;
+            const isDisabled = isNoteDisabled(noteWithOctave, keyOctave);
             
             return (
               <Pressable
@@ -90,7 +104,7 @@ function Keyboard({ octave, onNotePress }: KeyboardProps) {
                   { left: (whiteKeyWidth * offsetFactor) - (styles.blackKey.width / 2) },
                   isDisabled && styles.blackKeyDisabled,
                 ]}
-                onPress={isDisabled ? undefined : () => onNotePress(`${note}${keyOctave}`)}
+                onPress={isDisabled ? undefined : () => onNotePress(noteWithOctave)}
                 disabled={isDisabled}
               >
                 {!isDisabled && <Text style={styles.blackKeyText}>{note}</Text>}
@@ -107,6 +121,7 @@ const TRIAD_TYPES: TriadType[] = ['dim', 'minor', 'major', 'sus'];
 const EXTENSION_TYPES: ExtensionType[] = ['6', 'm7', 'M7', '9'];
 
 export default function PlayScreen() {
+  const { selectedKey } = useLocalSearchParams<{ selectedKey: string }>();
   const { connectedDevice, keyboard } = useMidi();
   const [octave, setOctave] = useState(4);
   const [selectedTriad, setSelectedTriad] = useState<TriadType>('major');
@@ -292,13 +307,13 @@ export default function PlayScreen() {
               <Pressable 
                 style={styles.keyButton}
                 onPress={() => {
-                  // TODO: Open key selection modal
+                  router.push('/key-modal');
                 }}
               >
-                <Text style={styles.keyButtonText}>Key: C</Text>
+                <Text style={styles.keyButtonText}>Key: {selectedKey || 'All'}</Text>
               </Pressable>
             </View>
-            <Keyboard octave={octave} onNotePress={handleNotePress} />
+            <Keyboard octave={octave} onNotePress={handleNotePress} selectedKey={selectedKey || null} />
           </View>
         </View>
       </View>

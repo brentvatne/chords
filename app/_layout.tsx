@@ -65,6 +65,38 @@ export default function RootLayout() {
               ),
             }}
           />
+          <Stack.Screen
+            name="key-modal"
+            options={{
+              title: 'Select Key',
+              presentation: 'formSheet',
+              headerStyle: {
+                backgroundColor: '#1C1C1E',
+              },
+              headerTintColor: '#F5F1E8',
+              headerTitleStyle: {
+                fontWeight: '600',
+              },
+              contentStyle: {
+                backgroundColor: '#1C1C1E',
+              },
+              headerLeft: () => (
+                <Pressable
+                  onPress={() => router.back()}
+                  style={({ pressed }) => [
+                    styles.closeButton,
+                    pressed && { opacity: 0.7 }
+                  ]}
+                >
+                  <Ionicons
+                    name="close"
+                    size={20}
+                    color="#E89D45"
+                  />
+                </Pressable>
+              ),
+            }}
+          />
         </Stack>
       </MidiProvider>
     </GestureHandlerRootView>
