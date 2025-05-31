@@ -79,7 +79,7 @@ export default function DeviceModal() {
                 ]}
                 onPress={() => {
                   connectToDevice(device.id);
-                  router.navigate("/");
+                  router.back();
                 }}
                 disabled={device.id === connectedDevice?.id}
               >

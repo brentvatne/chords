@@ -25,11 +25,14 @@ export function setLastConnectedDeviceId(deviceId: string | null): void {
 }
 
 export function getLastSelectedKey(): string | null {
-  return Storage.getItemSync(STORAGE_KEYS.LAST_SELECTED_KEY);
+  const key = Storage.getItemSync(STORAGE_KEYS.LAST_SELECTED_KEY);
+  return key === "__ALL__" ? null : key;
 }
 
 export function setLastSelectedKey(key: string | null): void {
-  if (key) {
+  if (key === null) {
+    Storage.setItemSync(STORAGE_KEYS.LAST_SELECTED_KEY, "__ALL__");
+  } else if (key) {
     Storage.setItemSync(STORAGE_KEYS.LAST_SELECTED_KEY, key);
   } else {
     Storage.removeItemSync(STORAGE_KEYS.LAST_SELECTED_KEY);

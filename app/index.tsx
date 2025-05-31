@@ -113,30 +113,32 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingBottom: 100,
-  },
-  deviceIcon: {
-    marginBottom: 20,
+    backgroundColor: "#1C1C1E",
+    paddingHorizontal: 32,
   },
   noDeviceText: {
-    fontSize: 18,
-    color: "#6B5B47", // Warm brown
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#F5F1E8",
     textAlign: "center",
     marginBottom: 8,
   },
   noDeviceSubtext: {
-    fontSize: 14,
-    color: "#8A7B6B", // Muted brown
+    fontSize: 16,
+    color: "#999",
     textAlign: "center",
     marginBottom: 20,
   },
   deviceButton: {
-    backgroundColor: "#E89D45", // Warm orange like active buttons
+    backgroundColor: "#2A2A2A",
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#404040",
   },
   deviceButtonText: {
-    color: "#F5F1E8", // Cream text
+    color: "#E89D45",
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -339,7 +341,9 @@ export default function PlayScreen() {
   const selectedKey =
     params.selectedKey === undefined
       ? getLastSelectedKey()
-      : params.selectedKey;
+      : params.selectedKey === "__ALL__"
+        ? null
+        : params.selectedKey;
 
   const { connectedDevice, keyboard, devices, connectToDevice } = useMidi();
 
@@ -414,7 +418,10 @@ export default function PlayScreen() {
     try {
       const rootNote = noteNameWithOctave as MusicalNoteWithOctave;
       const selection: ChordSelection = {
-        triad: selectedTriad ?? getTriadForNoteInKey(rootNote, selectedKey),
+        triad:
+          selectedTriad !== null
+            ? selectedTriad
+            : getTriadForNoteInKey(rootNote, selectedKey),
         extensions: selectedExtensions,
       };
 

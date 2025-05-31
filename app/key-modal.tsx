@@ -29,7 +29,10 @@ export default function KeyModal() {
           <Pressable
             style={[styles.keyButton, styles.clearButton]}
             onPress={() => {
-              router.replace("/");
+              router.replace({
+                pathname: "/",
+                params: { selectedKey: "__ALL__" },
+              });
             }}
           >
             <Text style={styles.keyButtonText}>All</Text>
