@@ -372,6 +372,9 @@ export default function PlayScreen() {
   useEffect(() => {
     if (routeKey) {
       setLastSelectedKey(routeKey);
+    } else {
+      // Clear the stored key when no key is selected
+      setLastSelectedKey(null);
     }
   }, [routeKey]);
 
@@ -407,7 +410,7 @@ export default function PlayScreen() {
 
   // Restore last selected key if none provided in route
   useEffect(() => {
-    if (!routeKey) {
+    if (routeKey === undefined) {
       const lastKey = getLastSelectedKey();
       if (lastKey) {
         router.replace({

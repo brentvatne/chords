@@ -218,16 +218,77 @@ export function getTriadForNoteInKey(
   note: string,
   key: string | null,
 ): TriadType {
-  if (!key) return "major"; // Default to major if no key selected
+  if (!key) {
+    // When no key is selected ("All" keys), determine the most natural quality for each note
+    const notePC = Note.get(note).pc;
+    if (!notePC) return "major";
 
-  // Get the scale degrees for the key
-  const scale = Scale.get(`${key} major`);
-  if (!scale.notes.length) return "major"; // Default to major if invalid key
+    // In "All" keys mode, use these common associations:
+    switch (notePC) {
+      case "C":
+      case "F":
+      case "G":
+        return "major"; // Most commonly major
+      case "D":
+      case "E":
+      case "A":
+        return "minor"; // Most commonly minor
+      case "B":
+        return "dim"; // Often diminished in common keys
+      default:
+        // For black keys, check if it's more commonly seen as sharp or flat
+        const enharmonic = Note.enharmonic(notePC);
+        if (enharmonic) {
+          // If it has an enharmonic equivalent, check which is more common
+          const sharpKeys = ["C#", "D#", "F#", "G#", "A#"];
+          const flatKeys = ["Db", "Eb", "Gb", "Ab", "Bb"];
+          if (sharpKeys.includes(notePC)) {
+            return "major"; // In sharp keys, these are often major
+          } else if (flatKeys.includes(notePC)) {
+            return "minor"; // In flat keys, these are often minor
+          }
+        }
+        return "major"; // Default to major for any other cases
+    }
+  }
 
   // Get the note's position in the scale (1-based index)
   const notePC = Note.get(note).pc;
   const keyPC = Note.get(key).pc;
   if (!notePC || !keyPC) return "major";
+
+  // Special handling for keys that use double sharps
+  const specialScales: Record<string, string[]> = {
+    "G#": ["G#", "A#", "B#", "C#", "D#", "E#", "F"],
+    "A#": ["A#", "B#", "C", "D#", "E#", "F", "G"],
+    "B#": ["B#", "C#", "D", "E#", "F#", "G", "A"],
+    "C#": ["C#", "D#", "E#", "F#", "G#", "A#", "B#"],
+  };
+
+  if (key in specialScales) {
+    const scale = specialScales[key];
+    const scaleDegree = scale.findIndex((n) => Note.get(n).pc === notePC) + 1;
+
+    // Determine chord quality based on scale degree
+    switch (scaleDegree) {
+      case 1: // I
+      case 4: // IV
+      case 5: // V
+        return "major";
+      case 2: // ii
+      case 3: // iii
+      case 6: // vi
+        return "minor";
+      case 7: // vii°
+        return "dim";
+      default:
+        return "major"; // Default to major for notes not in the key
+    }
+  }
+
+  // For all other keys, use Tonal.js Scale
+  const scale = Scale.get(`${key} major`);
+  if (!scale.notes.length) return "major"; // Default to major if invalid key
 
   // Find the scale degree (1-based)
   const scaleDegree =

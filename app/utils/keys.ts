@@ -1,5 +1,5 @@
 import { Note, Scale } from "tonal";
-import { MusicalNote } from "./chords";
+import type { MusicalNote } from "../../app/utils/chords";
 
 // We'll generate this dynamically now using Tonal
 const NOTES_IN_MAJOR_KEYS: Record<string, string[]> = {};
@@ -34,10 +34,18 @@ const NOTES_IN_MAJOR_KEYS: Record<string, string[]> = {};
   }
 });
 
-// Special case for G# major which uses double sharps
+// Special cases for keys that use double sharps
 NOTES_IN_MAJOR_KEYS["G#"] = ["G#", "A#", "B#", "C#", "D#", "E#", "F"];
-// Its enharmonic equivalent Ab major
 NOTES_IN_MAJOR_KEYS["Ab"] = ["Ab", "Bb", "C", "Db", "Eb", "F", "G"];
+
+NOTES_IN_MAJOR_KEYS["A#"] = ["A#", "B#", "C", "D#", "E#", "F", "G"];
+NOTES_IN_MAJOR_KEYS["Bb"] = ["Bb", "C", "D", "Eb", "F", "G", "A"];
+
+NOTES_IN_MAJOR_KEYS["B#"] = ["B#", "C#", "D", "E#", "F#", "G", "A"];
+NOTES_IN_MAJOR_KEYS["Cb"] = ["Cb", "Db", "Eb", "Fb", "Gb", "Ab", "Bb"];
+
+NOTES_IN_MAJOR_KEYS["C#"] = ["C#", "D#", "E#", "F#", "G#", "A#", "B#"];
+NOTES_IN_MAJOR_KEYS["Db"] = ["Db", "Eb", "F", "Gb", "Ab", "Bb", "C"];
 
 export function getNoteWithoutOctave(noteWithOctave: string): MusicalNote {
   // Remove any octave number from the note
@@ -55,26 +63,22 @@ export function isNoteInKey(note: string, key: string): boolean {
   const normalizedKey = Note.get(key).pc;
   if (!normalizedKey) return false;
 
-  // Special handling for G# major and its enharmonic Ab major
-  if (normalizedKey === "G#" || normalizedKey === "Ab") {
-    // When using G# major, we need to be strict about accidentals
-    if (key === "G#") {
-      // Explicitly disallow G natural
-      if (normalizedNote === "G") return false;
-
-      const gsScale = NOTES_IN_MAJOR_KEYS["G#"];
-      return gsScale.includes(normalizedNote);
-    }
-
-    // When using Ab major, use its scale
-    const abScale = NOTES_IN_MAJOR_KEYS["Ab"];
-    return abScale.includes(normalizedNote);
+  // Special handling for keys that use double sharps
+  const specialKeys = ["G#", "A#", "B#", "C#"];
+  if (specialKeys.includes(key)) {
+    // Explicitly disallow naturals that should be sharp
+    const keyScale = NOTES_IN_MAJOR_KEYS[key];
+    return keyScale.includes(normalizedNote);
   }
 
-  // Get the scale for this key using Tonal
-  const scale = Scale.get(`${normalizedKey} major`).notes;
+  // For all other keys, use their predefined scales
+  const keyScale = NOTES_IN_MAJOR_KEYS[normalizedKey];
+  if (keyScale) {
+    return keyScale.includes(normalizedNote);
+  }
 
-  // Check if the normalized note is in the scale
+  // If no predefined scale exists, fall back to Tonal.js Scale
+  const scale = Scale.get(`${normalizedKey} major`).notes;
   return scale.includes(normalizedNote);
 }
 
@@ -83,16 +87,19 @@ export function _getNotesInKey(key: string): string[] {
   const normalizedKey = Note.get(key).pc;
   if (!normalizedKey) return [];
 
-  // Special case for G# major
-  if (normalizedKey === "G#") {
-    return NOTES_IN_MAJOR_KEYS["G#"];
+  // Special cases for keys that use double sharps
+  const specialKeys = ["G#", "A#", "B#", "C#"];
+  if (specialKeys.includes(key)) {
+    return NOTES_IN_MAJOR_KEYS[key];
   }
 
-  // Special case for Ab major
-  if (normalizedKey === "Ab") {
-    return NOTES_IN_MAJOR_KEYS["Ab"];
+  // For all other keys, use their predefined scales
+  const keyScale = NOTES_IN_MAJOR_KEYS[normalizedKey];
+  if (keyScale) {
+    return keyScale;
   }
 
+  // If no predefined scale exists, fall back to Tonal.js Scale
   const scale = Scale.get(`${normalizedKey} major`).notes;
   return scale;
 }
