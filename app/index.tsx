@@ -10,11 +10,13 @@ import {
 import { useMidi } from "../contexts/MidiContext";
 import { Keyboard } from "./components/Keyboard";
 import {
+  ChordSelection,
   ExtensionType,
   MusicalNoteWithOctave,
   TriadType,
   chordToMidiNotes,
   getChordInfo,
+  getTriadForNoteInKey,
 } from "./utils/chords";
 import { FONT_SIZES, isSmallScreen } from "./utils/screen";
 import {
@@ -339,8 +341,8 @@ export default function PlayScreen() {
 
   // Initialize state with stored values
   const [octave, setOctave] = useState(() => getLastOctave() ?? 4);
-  const [selectedTriad, setSelectedTriad] = useState<TriadType>(
-    () => getLastTriad() ?? "major",
+  const [selectedTriad, setSelectedTriad] = useState<TriadType | null>(
+    () => getLastTriad() ?? null,
   );
   const [selectedExtensions, setSelectedExtensions] = useState<ExtensionType[]>(
     () => getLastExtensions(),
@@ -419,8 +421,8 @@ export default function PlayScreen() {
   const handleNotePressIn = async (noteNameWithOctave: string) => {
     try {
       const rootNote = noteNameWithOctave as MusicalNoteWithOctave;
-      const selection = {
-        triad: selectedTriad,
+      const selection: ChordSelection = {
+        triad: selectedTriad ?? getTriadForNoteInKey(rootNote, routeKey),
         extensions: selectedExtensions,
       };
 
@@ -590,7 +592,10 @@ export default function PlayScreen() {
                       styles.qualityButton,
                       selectedTriad === triad && styles.qualityButtonSelected,
                     ]}
-                    onPress={() => setSelectedTriad(triad)}
+                    onPress={() => {
+                      setSelectedTriad(selectedTriad === triad ? null : triad);
+                      setLastTriad(selectedTriad === triad ? null : triad);
+                    }}
                   >
                     <View style={styles.qualityButtonContent}>
                       <Text

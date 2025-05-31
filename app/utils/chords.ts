@@ -1,3 +1,5 @@
+import { Note, Scale } from "tonal";
+
 export type MusicalNote =
   | "C"
   | "C#"
@@ -77,14 +79,16 @@ export const EXTENSION_DESCRIPTIONS: Record<ExtensionType, ChordDescription> = {
   },
 };
 
-interface ChordSelection {
-  triad: TriadType;
+export interface ChordSelection {
+  triad?: TriadType;
   extensions: ExtensionType[];
 }
 
-interface ChordInfo {
+export interface ChordInfo {
   name: string;
   notes: string[];
+  root: string;
+  quality: string;
 }
 
 const TRIAD_INTERVALS: Record<TriadType, number[]> = {
@@ -161,7 +165,7 @@ export function getChordInfo(
 
   // Get all intervals for the chord
   const intervals = [
-    ...TRIAD_INTERVALS[selection.triad],
+    ...TRIAD_INTERVALS[selection.triad || "major"],
     ...selection.extensions.flatMap((ext) => EXTENSION_INTERVALS[ext]),
   ];
 
@@ -180,6 +184,8 @@ export function getChordInfo(
   return {
     name,
     notes,
+    root: rootNote,
+    quality: CHORD_QUALITY_DESCRIPTIONS[selection.triad || "major"].shortName,
   };
 }
 
@@ -196,7 +202,7 @@ export function chordToMidiNotes(
 
   // Get all intervals for the chord
   const intervals = [
-    ...TRIAD_INTERVALS[selection.triad],
+    ...TRIAD_INTERVALS[selection.triad || "major"],
     ...selection.extensions.flatMap((ext) => EXTENSION_INTERVALS[ext]),
   ];
 
@@ -206,4 +212,40 @@ export function chordToMidiNotes(
 
 function getNoteWithoutOctave(noteWithOctave: string): MusicalNote {
   return noteWithOctave.replace(/\d+$/, "") as MusicalNote;
+}
+
+export function getTriadForNoteInKey(
+  note: string,
+  key: string | null,
+): TriadType {
+  if (!key) return "major"; // Default to major if no key selected
+
+  // Get the scale degrees for the key
+  const scale = Scale.get(`${key} major`);
+  if (!scale.notes.length) return "major"; // Default to major if invalid key
+
+  // Get the note's position in the scale (1-based index)
+  const notePC = Note.get(note).pc;
+  const keyPC = Note.get(key).pc;
+  if (!notePC || !keyPC) return "major";
+
+  // Find the scale degree (1-based)
+  const scaleDegree =
+    scale.notes.findIndex((n) => Note.get(n).pc === notePC) + 1;
+
+  // Determine chord quality based on scale degree
+  switch (scaleDegree) {
+    case 1: // I
+    case 4: // IV
+    case 5: // V
+      return "major";
+    case 2: // ii
+    case 3: // iii
+    case 6: // vi
+      return "minor";
+    case 7: // vii°
+      return "dim";
+    default:
+      return "major"; // Default to major for notes not in the key
+  }
 }

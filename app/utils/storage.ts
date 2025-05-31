@@ -52,11 +52,24 @@ export function setLastOctave(octave: number): void {
 }
 
 export function getLastTriad(): TriadType | null {
-  return Storage.getItemSync(STORAGE_KEYS.LAST_TRIAD) as TriadType | null;
+  const triad = Storage.getItemSync(STORAGE_KEYS.LAST_TRIAD);
+  if (!triad) return null;
+  // Handle both JSON-stringified and raw string values
+  try {
+    return JSON.parse(triad) as TriadType;
+  } catch {
+    // If parsing fails, assume it's a raw string
+    return triad as TriadType;
+  }
 }
 
-export function setLastTriad(triad: TriadType): void {
-  Storage.setItemSync(STORAGE_KEYS.LAST_TRIAD, triad);
+export function setLastTriad(triad: TriadType | null): void {
+  if (triad === null) {
+    Storage.removeItemSync(STORAGE_KEYS.LAST_TRIAD);
+  } else {
+    // Store as raw string since we don't need JSON for simple strings
+    Storage.setItemSync(STORAGE_KEYS.LAST_TRIAD, triad);
+  }
 }
 
 export function getLastExtensions(): ExtensionType[] {
