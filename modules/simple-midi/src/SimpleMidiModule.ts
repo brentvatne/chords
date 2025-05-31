@@ -17,6 +17,16 @@ declare class SimpleMidiModule extends NativeModule<SimpleMidiModuleEvents> {
   // MIDI Message Sending
   sendNoteOn(note: number, velocity: number, channel: number): Promise<void>;
   sendNoteOff(note: number, velocity: number, channel: number): Promise<void>;
+  sendNotesOn(
+    notes: number[],
+    velocity: number,
+    channel: number,
+  ): Promise<void>;
+  sendNotesOff(
+    notes: number[],
+    velocity: number,
+    channel: number,
+  ): Promise<void>;
   sendControlChange(
     controller: number,
     value: number,

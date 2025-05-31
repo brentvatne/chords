@@ -51,6 +51,16 @@ public class SimpleMidiModule: Module {
       self.sendNoteOffMessage(note: UInt8(note), velocity: UInt8(velocity), channel: UInt8(channel))
     }
     
+    // Send multiple Note On messages at once
+    AsyncFunction("sendNotesOn") { (notes: [Int], velocity: Int, channel: Int) in
+      self.sendNotesOnMessage(notes: notes.map { UInt8($0) }, velocity: UInt8(velocity), channel: UInt8(channel))
+    }
+    
+    // Send multiple Note Off messages at once
+    AsyncFunction("sendNotesOff") { (notes: [Int], velocity: Int, channel: Int) in
+      self.sendNotesOffMessage(notes: notes.map { UInt8($0) }, velocity: UInt8(velocity), channel: UInt8(channel))
+    }
+    
     // Send Control Change message
     AsyncFunction("sendControlChange") { (controller: Int, value: Int, channel: Int) in
       self.sendControlChangeMessage(controller: UInt8(controller), value: UInt8(value), channel: UInt8(channel))
@@ -228,6 +238,50 @@ public class SimpleMidiModule: Module {
     packet.data.2 = velocity & 0x7F           // Velocity
     
     var packetList = MIDIPacketList(numPackets: 1, packet: packet)
+    MIDISend(outputPort, connectedDevice, &packetList)
+  }
+  
+  private func sendNotesOnMessage(notes: [UInt8], velocity: UInt8, channel: UInt8) {
+    guard connectedDevice != 0 else { return }
+    guard !notes.isEmpty else { return }
+    
+    var packet = MIDIPacket()
+    packet.timeStamp = 0
+    packet.length = UInt16(notes.count * 3)  // 3 bytes per note
+    
+    var packetList = MIDIPacketList(numPackets: 1, packet: packet)
+    var curPacket = MIDIPacketListInit(&packetList)
+    
+    var noteData: [UInt8] = []
+    for note in notes {
+      noteData.append(0x90 | (channel & 0x0F))  // Note On status
+      noteData.append(note & 0x7F)              // Note number
+      noteData.append(velocity & 0x7F)          // Velocity
+    }
+    
+    curPacket = MIDIPacketListAdd(&packetList, 256, curPacket, 0, Int(noteData.count), noteData)
+    MIDISend(outputPort, connectedDevice, &packetList)
+  }
+  
+  private func sendNotesOffMessage(notes: [UInt8], velocity: UInt8, channel: UInt8) {
+    guard connectedDevice != 0 else { return }
+    guard !notes.isEmpty else { return }
+    
+    var packet = MIDIPacket()
+    packet.timeStamp = 0
+    packet.length = UInt16(notes.count * 3)  // 3 bytes per note
+    
+    var packetList = MIDIPacketList(numPackets: 1, packet: packet)
+    var curPacket = MIDIPacketListInit(&packetList)
+    
+    var noteData: [UInt8] = []
+    for note in notes {
+      noteData.append(0x80 | (channel & 0x0F))  // Note Off status
+      noteData.append(note & 0x7F)              // Note number
+      noteData.append(velocity & 0x7F)          // Velocity
+    }
+    
+    curPacket = MIDIPacketListAdd(&packetList, 256, curPacket, 0, Int(noteData.count), noteData)
     MIDISend(outputPort, connectedDevice, &packetList)
   }
   

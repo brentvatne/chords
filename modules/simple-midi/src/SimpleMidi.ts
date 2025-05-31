@@ -67,6 +67,23 @@ export class MidiKeyboard {
     return this.module.sendNoteOff(note, velocity, this.currentChannel);
   }
 
+  async playNotes(notes: number[], velocity: number = 64): Promise<void> {
+    // Release any notes that are already playing
+    const playingNotes = notes.filter((note) => this.activeNotes.has(note));
+    if (playingNotes.length > 0) {
+      await this.releaseNotes(playingNotes);
+    }
+
+    // Add all notes to active notes set
+    notes.forEach((note) => this.activeNotes.add(note));
+    return this.module.sendNotesOn(notes, velocity, this.currentChannel);
+  }
+
+  async releaseNotes(notes: number[], velocity: number = 64): Promise<void> {
+    notes.forEach((note) => this.activeNotes.delete(note));
+    return this.module.sendNotesOff(notes, velocity, this.currentChannel);
+  }
+
   async releaseAllNotes(): Promise<void> {
     const promises = Array.from(this.activeNotes).map((note) =>
       this.releaseNote(note),

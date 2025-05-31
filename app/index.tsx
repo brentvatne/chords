@@ -19,23 +19,6 @@ import {
   getChordInfo,
 } from "./utils/chords";
 
-async function playNotesAsync(
-  keyboard: any,
-  midiNotes: number[],
-  velocity: number,
-  duration: number,
-) {
-  if (midiNotes.length === 0) return;
-  for (const note of midiNotes) {
-    await keyboard.playNote(note, velocity);
-  }
-  setTimeout(async () => {
-    for (const note of midiNotes) {
-      await keyboard.releaseNote(note);
-    }
-  }, duration);
-}
-
 const TRIAD_TYPES: TriadType[] = ["dim", "minor", "major", "sus"];
 const EXTENSION_TYPES: ExtensionType[] = ["6", "m7", "M7", "9"];
 
@@ -44,15 +27,11 @@ async function sendNotesOnAsync(
   notes: number[],
   velocity: number,
 ) {
-  for (const note of notes) {
-    await keyboard.playNote(note, velocity);
-  }
+  await keyboard.playNotes(notes, velocity);
 }
 
 async function sendNotesOffAsync(keyboard: MidiKeyboard, notes: number[]) {
-  for (const note of notes) {
-    await keyboard.releaseNote(note);
-  }
+  await keyboard.releaseNotes(notes);
 }
 
 export default function PlayScreen() {
