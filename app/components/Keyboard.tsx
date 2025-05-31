@@ -2,6 +2,7 @@ import Color from "color";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { getNoteWithoutOctave, isNoteInKey } from "../utils/keys";
+import { FONT_SIZES, isSmallScreen } from "../utils/screen";
 
 interface KeyboardProps {
   octave: number;
@@ -24,7 +25,9 @@ export function Keyboard({
 
   const whiteKeyWidth =
     keyboardWidth > 0 ? keyboardWidth / whiteKeys.length : 0;
-  const blackKeyWidth = whiteKeyWidth * 0.5;
+  const blackKeyWidth = isSmallScreen()
+    ? whiteKeyWidth * 0.7
+    : whiteKeyWidth * 0.5;
 
   const blackKeyPositions = [
     { note: "C#", flatName: "Db", offsetFactor: 1, octaveOffset: 0 },
@@ -199,13 +202,17 @@ const styles = StyleSheet.create({
   },
   blackKeyText: {
     color: "#F5F1E8", // Cream text
-    fontSize: 16,
+    fontSize: isSmallScreen()
+      ? FONT_SIZES.blackKeyText.small
+      : FONT_SIZES.blackKeyText.normal,
     opacity: 0.6,
     fontWeight: "bold",
   },
   blackKeyFlatText: {
     marginTop: 2,
-    fontSize: 14,
+    fontSize: isSmallScreen()
+      ? FONT_SIZES.blackKeyFlatText.small
+      : FONT_SIZES.blackKeyFlatText.normal,
     opacity: 0.4,
   },
   blackKeyLabelContainer: {

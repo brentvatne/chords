@@ -25,61 +25,55 @@ export type MusicalNoteWithOctave = `${MusicalNote}${number}`;
 export type TriadType = "major" | "minor" | "dim" | "sus";
 export type ExtensionType = "6" | "m7" | "M7" | "9";
 
-export interface ChordQualityDescription {
-  shortName: string; // Display name (e.g., "Maj", "Min")
-  fullName: string; // Full name (e.g., "Major", "Minor")
-  description: string; // Emotional/musical quality description
+interface ChordDescription {
+  shortName: string;
+  description: string;
+  shortDescription: string; // Added for small screens
 }
 
-export const CHORD_QUALITY_DESCRIPTIONS: Record<
-  TriadType,
-  ChordQualityDescription
-> = {
+export const CHORD_QUALITY_DESCRIPTIONS: Record<TriadType, ChordDescription> = {
   major: {
-    shortName: "Maj",
-    fullName: "Major",
-    description: "Bright, happy, resolved.",
+    shortName: "maj",
+    description: "A bright, stable chord built on the major third",
+    shortDescription: "Bright",
   },
   minor: {
-    shortName: "Min",
-    fullName: "Minor",
-    description: "Dark, melancholic, introspective.",
+    shortName: "min",
+    description: "A darker, more melancholic sound with a minor third",
+    shortDescription: "Dark",
   },
   dim: {
-    shortName: "Dim",
-    fullName: "Diminished",
-    description: "Tense, dramatic, and unsettling.",
+    shortName: "dim",
+    description: "A tense, unstable sound with two minor thirds",
+    shortDescription: "Tense",
   },
   sus: {
-    shortName: "Sus",
-    fullName: "Suspended",
-    description: "Unstable, open-ended, leading to resolution.",
+    shortName: "sus",
+    description: "An open, ambiguous sound without a third",
+    shortDescription: "Open",
   },
 };
 
-export const EXTENSION_DESCRIPTIONS: Record<
-  ExtensionType,
-  ChordQualityDescription
-> = {
+export const EXTENSION_DESCRIPTIONS: Record<ExtensionType, ChordDescription> = {
   "6": {
     shortName: "6",
-    fullName: "Sixth",
-    description: "Sweet and gentle, adds warmth.",
+    description: "Adds a major sixth for a lighter, jazzier sound",
+    shortDescription: "Sweet",
   },
   m7: {
-    shortName: "m7",
-    fullName: "Minor Seventh",
-    description: "Smooth and jazzy, creates flow.",
+    shortName: "7",
+    description: "Adds a minor seventh for a bluesy, dominant sound",
+    shortDescription: "Bluesy",
   },
   M7: {
-    shortName: "M7",
-    fullName: "Major Seventh",
-    description: "Lush and dreamy, adds sophistication.",
+    shortName: "maj7",
+    description: "Adds a major seventh for a smooth, jazzy sound",
+    shortDescription: "Dreamy",
   },
   "9": {
     shortName: "9",
-    fullName: "Ninth",
-    description: "Rich and complex, adds color.",
+    description: "Adds a ninth for extra color and richness",
+    shortDescription: "Rich",
   },
 };
 
