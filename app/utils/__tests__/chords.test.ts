@@ -1,4 +1,9 @@
-import { getTriadForNoteInKey } from "../chords";
+import {
+    ChordSelection,
+    chordToMidiNotes,
+    getChordInfo,
+    getTriadForNoteInKey,
+} from "../chords";
 
 describe("Chord utilities", () => {
   describe("getTriadForNoteInKey", () => {
@@ -132,6 +137,98 @@ describe("Chord utilities", () => {
       expect(getTriadForNoteInKey("G#4", "G#")).toBe("major"); // I in G#
       expect(getTriadForNoteInKey("A#4", "G#")).toBe("minor"); // ii in G#
       expect(getTriadForNoteInKey("B#4", "C#")).toBe("dim"); // vii° in C#
+    });
+  });
+});
+
+describe("Chord Utils", () => {
+  describe("getChordInfo", () => {
+    test("Returns correct info for major triad", () => {
+      const selection: ChordSelection = {
+        triad: "major",
+        extensions: [],
+      };
+      const info = getChordInfo(selection, "C4");
+      expect(info.name).toBe("C");
+      expect(info.notes).toEqual(["C", "E", "G"]);
+    });
+
+    test("Returns correct info for minor triad", () => {
+      const selection: ChordSelection = {
+        triad: "minor",
+        extensions: [],
+      };
+      const info = getChordInfo(selection, "C4");
+      expect(info.name).toBe("Cm");
+      expect(info.notes).toEqual(["C", "E♭", "G"]);
+    });
+
+    test("Returns correct info for diminished triad", () => {
+      const selection: ChordSelection = {
+        triad: "dim",
+        extensions: [],
+      };
+      const info = getChordInfo(selection, "C4");
+      expect(info.name).toBe("Cdim");
+      expect(info.notes).toEqual(["C", "E♭", "G♭"]);
+    });
+
+    test("Returns correct info for suspended triad", () => {
+      const selection: ChordSelection = {
+        triad: "sus",
+        extensions: [],
+      };
+      const info = getChordInfo(selection, "C4");
+      expect(info.name).toBe("Csus");
+      expect(info.notes).toEqual(["C", "F", "G"]);
+    });
+
+    test("Handles extensions correctly", () => {
+      const selection: ChordSelection = {
+        triad: "major",
+        extensions: ["6", "M7", "9"],
+      };
+      const info = getChordInfo(selection, "C4");
+      expect(info.name).toBe("C6M79");
+      expect(info.notes).toEqual(["C", "E", "G", "A", "B", "D"]);
+    });
+  });
+
+  describe("chordToMidiNotes", () => {
+    test("Returns correct MIDI notes for major triad", () => {
+      const selection: ChordSelection = {
+        triad: "major",
+        extensions: [],
+      };
+      const notes = chordToMidiNotes(selection, "C4");
+      expect(notes).toEqual([60, 64, 67]); // C4, E4, G4
+    });
+
+    test("Returns correct MIDI notes for minor triad", () => {
+      const selection: ChordSelection = {
+        triad: "minor",
+        extensions: [],
+      };
+      const notes = chordToMidiNotes(selection, "C4");
+      expect(notes).toEqual([60, 63, 67]); // C4, E♭4, G4
+    });
+
+    test("Returns correct MIDI notes with extensions", () => {
+      const selection: ChordSelection = {
+        triad: "major",
+        extensions: ["M7"],
+      };
+      const notes = chordToMidiNotes(selection, "C4");
+      expect(notes).toEqual([60, 64, 67, 71]); // C4, E4, G4, B4
+    });
+
+    test("Handles octave changes correctly", () => {
+      const selection: ChordSelection = {
+        triad: "major",
+        extensions: ["9"],
+      };
+      const notes = chordToMidiNotes(selection, "C4");
+      expect(notes).toEqual([60, 64, 67, 74]); // C4, E4, G4, D5
     });
   });
 });

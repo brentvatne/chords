@@ -44,8 +44,31 @@ NOTES_IN_MAJOR_KEYS["Bb"] = ["Bb", "C", "D", "Eb", "F", "G", "A"];
 NOTES_IN_MAJOR_KEYS["B#"] = ["B#", "C#", "D", "E#", "F#", "G", "A"];
 NOTES_IN_MAJOR_KEYS["Cb"] = ["Cb", "Db", "Eb", "Fb", "Gb", "Ab", "Bb"];
 
-NOTES_IN_MAJOR_KEYS["C#"] = ["C#", "D#", "E#", "F#", "G#", "A#", "B#"];
-NOTES_IN_MAJOR_KEYS["Db"] = ["Db", "Eb", "F", "Gb", "Ab", "Bb", "C"];
+// Additional sharp key definitions
+NOTES_IN_MAJOR_KEYS["F#"] = ["F#", "G#", "A#", "B", "C#", "D#", "E#"];
+NOTES_IN_MAJOR_KEYS["B"] = ["B", "C#", "D#", "E", "F#", "G#", "A#"];
+
+// Add support for minor keys
+const NOTES_IN_MINOR_KEYS: Record<string, string[]> = {
+  // Natural minor keys (parallel to major keys)
+  Am: ["A", "B", "C", "D", "E", "F", "G"],
+  Em: ["E", "F#", "G", "A", "B", "C", "D"],
+  Bm: ["B", "C#", "D", "E", "F#", "G", "A"],
+  "F#m": ["F#", "G#", "A", "B", "C#", "D", "E"],
+  "C#m": ["C#", "D#", "E", "F#", "G#", "A", "B"],
+  "G#m": ["G#", "A#", "B", "C#", "D#", "E", "F#"],
+  "D#m": ["D#", "E#", "F#", "G#", "A#", "B", "C#"],
+  "A#m": ["A#", "B#", "C#", "D#", "E#", "F#", "G#"],
+  Dm: ["D", "E", "F", "G", "A", "Bb", "C"],
+  Gm: ["G", "A", "Bb", "C", "D", "Eb", "F"],
+  Cm: ["C", "D", "Eb", "F", "G", "Ab", "Bb"],
+  Fm: ["F", "G", "Ab", "Bb", "C", "Db", "Eb"],
+  Bbm: ["Bb", "C", "Db", "Eb", "F", "Gb", "Ab"],
+  Ebm: ["Eb", "F", "Gb", "Ab", "Bb", "Cb", "Db"],
+  Abm: ["Ab", "Bb", "Cb", "Db", "Eb", "Fb", "Gb"],
+  Dbm: ["Db", "Eb", "E", "Gb", "Ab", "A", "B"],
+  Gbm: ["Gb", "Ab", "A", "B", "Db", "D", "E"],
+};
 
 export function getNoteWithoutOctave(noteWithOctave: string): MusicalNote {
   // Remove any octave number from the note
@@ -55,51 +78,37 @@ export function getNoteWithoutOctave(noteWithOctave: string): MusicalNote {
 }
 
 export function isNoteInKey(note: string, key: string): boolean {
-  // Remove any octave number and normalize the note
-  const normalizedNote = Note.get(note).pc;
-  if (!normalizedNote) return false;
-
-  // Normalize the key
-  const normalizedKey = Note.get(key).pc;
-  if (!normalizedKey) return false;
-
-  // Special handling for keys that use double sharps
-  const specialKeys = ["G#", "A#", "B#", "C#"];
-  if (specialKeys.includes(key)) {
-    // Explicitly disallow naturals that should be sharp
-    const keyScale = NOTES_IN_MAJOR_KEYS[key];
-    return keyScale.includes(normalizedNote);
-  }
-
-  // For all other keys, use their predefined scales
-  const keyScale = NOTES_IN_MAJOR_KEYS[normalizedKey];
-  if (keyScale) {
-    return keyScale.includes(normalizedNote);
-  }
-
-  // If no predefined scale exists, fall back to Tonal.js Scale
-  const scale = Scale.get(`${normalizedKey} major`).notes;
-  return scale.includes(normalizedNote);
+  const noteWithoutOctave = getNoteWithoutOctave(note);
+  const keyNotes = _getNotesInKey(key);
+  return keyNotes.includes(noteWithoutOctave);
 }
 
 // For testing
 export function _getNotesInKey(key: string): string[] {
-  const normalizedKey = Note.get(key).pc;
-  if (!normalizedKey) return [];
+  // Check minor keys first
+  if (NOTES_IN_MINOR_KEYS[key]) {
+    return NOTES_IN_MINOR_KEYS[key];
+  }
 
-  // Special cases for keys that use double sharps
-  const specialKeys = ["G#", "A#", "B#", "C#"];
-  if (specialKeys.includes(key)) {
+  // Check major keys
+  if (NOTES_IN_MAJOR_KEYS[key]) {
     return NOTES_IN_MAJOR_KEYS[key];
   }
 
-  // For all other keys, use their predefined scales
-  const keyScale = NOTES_IN_MAJOR_KEYS[normalizedKey];
-  if (keyScale) {
-    return keyScale;
+  // If not in our predefined lists, try to generate using Tonal.js
+  const scale = Scale.get(`${key} major`);
+  if (scale && scale.notes && scale.notes.length > 0) {
+    return scale.notes.map(getNoteWithoutOctave);
   }
 
-  // If no predefined scale exists, fall back to Tonal.js Scale
-  const scale = Scale.get(`${normalizedKey} major`).notes;
-  return scale;
+  // Try minor scale if major didn't work
+  const minorScale = Scale.get(`${key} minor`);
+  if (minorScale && minorScale.notes && minorScale.notes.length > 0) {
+    return minorScale.notes.map(getNoteWithoutOctave);
+  }
+
+  return [];
 }
+
+// Additional special cases for problematic enharmonic keys
+NOTES_IN_MAJOR_KEYS["C#"] = ["C#", "D#", "E#", "F#", "G#", "A#", "B#"];

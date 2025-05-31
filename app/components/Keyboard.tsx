@@ -14,6 +14,22 @@ interface KeyboardProps {
 const BlackKeyPressedColor = Color("#1C1C1E").lighten(1.5).hex();
 const WhiteKeyPressedColor = Color("#FEFCF8").darken(0.02).hex();
 
+// Enharmonic equivalents for white keys in certain keys
+const WHITE_KEY_ENHARMONICS: Record<string, Record<string, string>> = {
+  // For keys with sharps
+  "C#": { F: "E#", C: "B#" },
+  "F#": { F: "E#" },
+  "G#": { F: "E#", C: "B#" },
+  // For keys with flats
+  Cb: { B: "Cb", E: "Fb" },
+  Gb: { B: "Cb" },
+  Db: {},
+  Ab: {},
+  Eb: {},
+  Bb: {},
+  F: {},
+};
+
 export function Keyboard({
   octave,
   onNotePressIn,
@@ -45,13 +61,111 @@ export function Keyboard({
     // If no key is selected, all notes are enabled
     if (!selectedKey) return false;
 
-    // Check if the note is in the selected key
-    return !isNoteInKey(getNoteWithoutOctave(note), selectedKey as any);
+    const noteWithoutOctave = getNoteWithoutOctave(note);
+
+    // First check if the note is directly in the key
+    if (isNoteInKey(noteWithoutOctave, selectedKey)) {
+      return false;
+    }
+
+    // For white keys, check if we need to use an enharmonic equivalent
+    if (WHITE_KEY_ENHARMONICS[selectedKey]) {
+      const enharmonic = WHITE_KEY_ENHARMONICS[selectedKey][noteWithoutOctave];
+      if (enharmonic && isNoteInKey(enharmonic, selectedKey)) {
+        return false;
+      }
+    }
+
+    // For black keys, we need to be more careful about which enharmonic to check
+    // Only check the enharmonic that matches the key's preference (flat vs sharp)
+    const flatKeys = [
+      "F",
+      "Bb",
+      "Eb",
+      "Ab",
+      "Db",
+      "Gb",
+      "Cb",
+      "Dm", // Dm contains Bb
+      "Gm", // Gm contains Bb, Eb
+      "Cm", // Cm contains Eb, Ab, Bb
+      "Fm",
+      "Bbm",
+      "Ebm",
+      "Abm",
+      "Dbm",
+      "Gbm",
+      "Cbm",
+    ];
+    const isCurrentKeyFlat = flatKeys.includes(selectedKey);
+
+    // Only check one enharmonic direction, not both
+    if (isCurrentKeyFlat) {
+      // For flat keys, if we have a sharp note, check its flat equivalent
+      const sharpToFlat: Record<string, string> = {
+        "C#": "Db",
+        "D#": "Eb",
+        "F#": "Gb",
+        "G#": "Ab",
+        "A#": "Bb",
+      };
+      const flatEquivalent = sharpToFlat[noteWithoutOctave];
+      if (flatEquivalent && isNoteInKey(flatEquivalent, selectedKey)) {
+        return false;
+      }
+    } else {
+      // For sharp keys, if we have a flat note, check its sharp equivalent
+      const flatToSharp: Record<string, string> = {
+        Db: "C#",
+        Eb: "D#",
+        Gb: "F#",
+        Ab: "G#",
+        Bb: "A#",
+      };
+      const sharpEquivalent = flatToSharp[noteWithoutOctave];
+      if (sharpEquivalent && isNoteInKey(sharpEquivalent, selectedKey)) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Helper function to determine which note to check for black keys
+  const getBlackKeyNoteForKey = (
+    sharpNote: string,
+    flatNote: string,
+    key: string | null,
+  ) => {
+    if (!key) return sharpNote;
+
+    // Keys that use flats (both major and minor)
+    const flatKeys = [
+      "F",
+      "Bb",
+      "Eb",
+      "Ab",
+      "Db",
+      "Gb",
+      "Cb",
+      "Dm", // Dm contains Bb
+      "Gm", // Gm contains Bb, Eb
+      "Cm", // Cm contains Eb, Ab, Bb
+      "Fm",
+      "Bbm",
+      "Ebm",
+      "Abm",
+      "Dbm",
+      "Gbm",
+      "Cbm",
+    ];
+    return flatKeys.includes(key) ? flatNote : sharpNote;
   };
 
   return (
     <View
       style={styles.keyboard}
+      testID="keyboard"
       onLayout={(event) => {
         setKeyboardWidth(event.nativeEvent.layout.width);
       }}
@@ -97,8 +211,38 @@ export function Keyboard({
           {blackKeyPositions.map(
             ({ note, flatName, offsetFactor, octaveOffset }) => {
               const keyOctave = octave + octaveOffset;
-              const noteWithOctave = `${note}${keyOctave}`;
+
+              // Determine which enharmonic to use for checking if the note is in the key
+              const noteToCheck = getBlackKeyNoteForKey(
+                note,
+                flatName,
+                selectedKey,
+              );
+              const noteWithOctave = `${noteToCheck}${keyOctave}`;
               const isDisabled = isNoteDisabled(noteWithOctave, keyOctave);
+
+              // For display, show flats for flat keys and sharps for sharp keys
+              const flatKeys = [
+                "F",
+                "Bb",
+                "Eb",
+                "Ab",
+                "Db",
+                "Gb",
+                "Cb",
+                "Dm", // Dm contains Bb
+                "Gm", // Gm contains Bb, Eb
+                "Cm", // Cm contains Eb, Ab, Bb
+                "Fm",
+                "Bbm",
+                "Ebm",
+                "Abm",
+                "Dbm",
+                "Gbm",
+                "Cbm",
+              ];
+              const displayNote =
+                selectedKey && flatKeys.includes(selectedKey) ? flatName : note;
 
               return (
                 <Pressable
@@ -126,11 +270,11 @@ export function Keyboard({
                 >
                   {!isDisabled && (
                     <View style={styles.blackKeyLabelContainer}>
-                      <Text style={styles.blackKeyText}>{note}</Text>
+                      <Text style={styles.blackKeyText}>{displayNote}</Text>
                       <Text
                         style={[styles.blackKeyText, styles.blackKeyFlatText]}
                       >
-                        {flatName}
+                        {displayNote === note ? flatName : note}
                       </Text>
                     </View>
                   )}

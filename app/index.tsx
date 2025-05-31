@@ -18,6 +18,7 @@ import {
   getChordInfo,
   getTriadForNoteInKey,
 } from "./utils/chords";
+import { ALL_KEYS } from "./utils/music-theory";
 import { FONT_SIZES, isSmallScreen } from "./utils/screen";
 import {
   addChordToHistory,
@@ -58,22 +59,22 @@ const CHORD_QUALITY_DESCRIPTIONS: ChordDescriptions = {
   dim: {
     shortName: "dim",
     description: "Diminished - Dark and unstable sound, creates tension",
-    shortDescription: "Dark, tense",
+    shortDescription: "dark, tense",
   },
   minor: {
     shortName: "min",
     description: "Minor - Soft, melancholic, or sad feeling",
-    shortDescription: "Soft, sad",
+    shortDescription: "soft, sad",
   },
   major: {
     shortName: "maj",
     description: "Major - Bright, happy, or stable sound",
-    shortDescription: "Bright, happy",
+    shortDescription: "bright, happy",
   },
   sus: {
     shortName: "sus",
     description: "Suspended - Open, ambiguous sound, neither major nor minor",
-    shortDescription: "Open, neutral",
+    shortDescription: "open, neutral",
   },
 };
 
@@ -81,22 +82,22 @@ const EXTENSION_DESCRIPTIONS: ExtensionDescriptions = {
   "6": {
     shortName: "6",
     description: "Add 6th - Adds a sweet, gentle color to the chord",
-    shortDescription: "Sweet, gentle",
+    shortDescription: "sweet, gentle",
   },
   m7: {
     shortName: "m7",
     description: "Minor 7th - Adds a soft, jazzy quality",
-    shortDescription: "Soft, jazzy",
+    shortDescription: "soft, jazzy",
   },
   M7: {
     shortName: "M7",
     description: "Major 7th - Adds a bright, complex flavor",
-    shortDescription: "Bright, rich",
+    shortDescription: "bright, rich",
   },
   "9": {
     shortName: "9",
     description: "Add 9th - Adds richness and sophistication",
-    shortDescription: "Rich, complex",
+    shortDescription: "rich, complex",
   },
 };
 
@@ -338,12 +339,16 @@ async function sendNotesOffAsync(keyboard: MidiKeyboard, notes: number[]) {
 export default function PlayScreen() {
   // Initialize with stored key if no route key provided
   const params = useLocalSearchParams<{ selectedKey: string }>();
-  const selectedKey =
+  const selectedKeyName =
     params.selectedKey === undefined
       ? getLastSelectedKey()
       : params.selectedKey === "__ALL__"
         ? null
         : params.selectedKey;
+
+  const selectedKey = selectedKeyName
+    ? (ALL_KEYS.find((k) => k.name === selectedKeyName) ?? null)
+    : null;
 
   const { connectedDevice, keyboard, devices, connectToDevice } = useMidi();
 
@@ -379,10 +384,10 @@ export default function PlayScreen() {
 
   // Store key changes
   useEffect(() => {
-    if (selectedKey !== undefined) {
-      setLastSelectedKey(selectedKey);
+    if (selectedKeyName !== undefined) {
+      setLastSelectedKey(selectedKeyName);
     }
-  }, [selectedKey]);
+  }, [selectedKeyName]);
 
   // Store the last connected device when it changes
   useEffect(() => {
@@ -417,11 +422,10 @@ export default function PlayScreen() {
   const handleNotePressIn = async (noteNameWithOctave: string) => {
     try {
       const rootNote = noteNameWithOctave as MusicalNoteWithOctave;
+      const triadFromKey = getTriadForNoteInKey(rootNote, selectedKey);
       const selection: ChordSelection = {
         triad:
-          selectedTriad !== null
-            ? selectedTriad
-            : getTriadForNoteInKey(rootNote, selectedKey),
+          selectedTriad !== null ? selectedTriad : (triadFromKey ?? "major"),
         extensions: selectedExtensions,
       };
 
@@ -459,7 +463,10 @@ export default function PlayScreen() {
       }
     } catch (error) {
       console.error(
-        `Error in handleNotePress with selection ${JSON.stringify({ triad: selectedTriad, extensions: selectedExtensions })} and root ${noteNameWithOctave}:`,
+        `Error in handleNotePress with selection ${JSON.stringify({
+          triad: selectedTriad,
+          extensions: selectedExtensions,
+        })} and root ${noteNameWithOctave}:`,
         error,
       );
       setCurrentChordInfo(null);
@@ -717,7 +724,7 @@ export default function PlayScreen() {
                 }}
               >
                 <Text style={styles.keyButtonText}>
-                  Key: {selectedKey || "All"}
+                  Key: {selectedKey?.name ?? "All"}
                 </Text>
               </Pressable>
             </View>
@@ -725,7 +732,9 @@ export default function PlayScreen() {
               octave={octave}
               onNotePressIn={handleNotePressIn}
               onNotePressOut={handleNotePressOut}
-              selectedKey={selectedKey || null}
+              selectedKey={
+                selectedKey?.name?.replace("♯", "#").replace("♭", "b") || null
+              }
             />
           </View>
         </View>

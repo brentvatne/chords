@@ -1,26 +1,36 @@
-import { Note, Scale } from "tonal";
+import { KeySignature } from "./music-theory";
 
 export type MusicalNote =
   | "C"
+  | "C♯"
   | "C#"
-  | "Db"
   | "D"
+  | "D♯"
   | "D#"
-  | "Eb"
   | "E"
   | "F"
+  | "F♯"
   | "F#"
-  | "Gb"
   | "G"
+  | "G♯"
   | "G#"
-  | "Ab"
   | "A"
+  | "A♯"
   | "A#"
-  | "Bb"
   | "B"
+  | "E♭"
+  | "Eb"
+  | "A♭"
+  | "Ab"
+  | "B♭"
+  | "Bb"
+  | "D♭"
+  | "Db"
+  | "G♭"
+  | "Gb"
+  | "C♭"
   | "Cb"
-  | "E#"
-  | "B#"
+  | "F♭"
   | "Fb";
 
 export type MusicalNoteWithOctave = `${MusicalNote}${number}`;
@@ -34,48 +44,48 @@ interface ChordDescription {
 }
 
 export const CHORD_QUALITY_DESCRIPTIONS: Record<TriadType, ChordDescription> = {
-  major: {
-    shortName: "maj",
-    description: "A bright, stable chord built on the major third",
-    shortDescription: "Bright",
+  dim: {
+    shortName: "dim",
+    description: "Dark and unstable",
+    shortDescription: "Dark, tense",
   },
   minor: {
     shortName: "min",
-    description: "A darker, more melancholic sound with a minor third",
-    shortDescription: "Dark",
+    description: "Soft and melancholic",
+    shortDescription: "Soft, sad",
   },
-  dim: {
-    shortName: "dim",
-    description: "A tense, unstable sound with two minor thirds",
-    shortDescription: "Tense",
+  major: {
+    shortName: "maj",
+    description: "Bright and stable",
+    shortDescription: "Bright, happy",
   },
   sus: {
     shortName: "sus",
-    description: "An open, ambiguous sound without a third",
-    shortDescription: "Open",
+    description: "Open and ambiguous",
+    shortDescription: "Open, neutral",
   },
 };
 
 export const EXTENSION_DESCRIPTIONS: Record<ExtensionType, ChordDescription> = {
   "6": {
     shortName: "6",
-    description: "Adds a major sixth for a lighter, jazzier sound",
-    shortDescription: "Sweet",
+    description: "Sweet and gentle",
+    shortDescription: "Sweet, gentle",
   },
   m7: {
-    shortName: "7",
-    description: "Adds a minor seventh for a bluesy, dominant sound",
-    shortDescription: "Bluesy",
+    shortName: "m7",
+    description: "Soft and jazzy",
+    shortDescription: "Soft, jazzy",
   },
   M7: {
-    shortName: "maj7",
-    description: "Adds a major seventh for a smooth, jazzy sound",
-    shortDescription: "Dreamy",
+    shortName: "M7",
+    description: "Bright and complex",
+    shortDescription: "Bright, rich",
   },
   "9": {
     shortName: "9",
-    description: "Adds a ninth for extra color and richness",
-    shortDescription: "Rich",
+    description: "Rich and colorful",
+    shortDescription: "Rich, full",
   },
 };
 
@@ -107,25 +117,35 @@ const EXTENSION_INTERVALS: Record<ExtensionType, number[]> = {
 
 const NOTE_TO_MIDI_NUMBER: Record<MusicalNote, number> = {
   C: 0,
+  "C♯": 1,
   "C#": 1,
-  Db: 1,
   D: 2,
+  "D♯": 3,
   "D#": 3,
-  Eb: 3,
   E: 4,
   F: 5,
+  "F♯": 6,
   "F#": 6,
-  Gb: 6,
   G: 7,
+  "G♯": 8,
   "G#": 8,
-  Ab: 8,
   A: 9,
+  "A♯": 10,
   "A#": 10,
-  Bb: 10,
   B: 11,
+  "E♭": 3,
+  Eb: 3,
+  "A♭": 8,
+  Ab: 8,
+  "B♭": 10,
+  Bb: 10,
+  "D♭": 1,
+  Db: 1,
+  "G♭": 6,
+  Gb: 6,
+  "C♭": 11,
   Cb: 11,
-  "E#": 5,
-  "B#": 0,
+  "F♭": 4,
   Fb: 4,
 };
 
@@ -200,7 +220,8 @@ export function chordToMidiNotes(
     string,
   ];
   const octave = parseInt(octaveStr, 10);
-  const rootMidi = NOTE_TO_MIDI_NUMBER[rootNote] + octave * 12;
+  // MIDI note 60 = C4, so the formula is: (octave + 1) * 12 + noteNumber
+  const rootMidi = NOTE_TO_MIDI_NUMBER[rootNote] + (octave + 1) * 12;
 
   // Get all intervals for the chord
   const intervals = [
@@ -217,69 +238,23 @@ function getNoteWithoutOctave(noteWithOctave: string): MusicalNote {
 }
 
 export function getTriadForNoteInKey(
-  note: string,
-  key: string | null,
-): TriadType {
-  if (!key) {
-    // When no key is selected ("All" keys), always use major
-    return "major";
-  }
+  note: MusicalNoteWithOctave,
+  key: KeySignature | null,
+): TriadType | null {
+  if (!key) return null;
 
-  // Get the note's position in the scale (1-based index)
-  const notePC = Note.get(note).pc;
-  const keyPC = Note.get(key).pc;
-  if (!notePC || !keyPC) return "major";
+  // Extract the note name without octave
+  const noteName = note.replace(/\d+/, "");
+  const noteIndex = key.notes.indexOf(noteName);
+  if (noteIndex === -1) return null;
 
-  // Special handling for keys that use double sharps
-  const specialScales: Record<string, string[]> = {
-    "G#": ["G#", "A#", "B#", "C#", "D#", "E#", "F"],
-    "A#": ["A#", "B#", "C", "D#", "E#", "F", "G"],
-    "B#": ["B#", "C#", "D", "E#", "F#", "G", "A"],
-    "C#": ["C#", "D#", "E#", "F#", "G#", "A#", "B#"],
-  };
+  // Get the chord for this position
+  const chordPositions = ["I", "II", "III", "IV", "V", "VI", "VII"] as const;
+  const chord = key.chords[chordPositions[noteIndex]];
 
-  if (key in specialScales) {
-    const scale = specialScales[key];
-    const scaleDegree = scale.findIndex((n) => Note.get(n).pc === notePC) + 1;
-
-    // Determine chord quality based on scale degree
-    switch (scaleDegree) {
-      case 1: // I
-      case 4: // IV
-      case 5: // V
-        return "major";
-      case 2: // ii
-      case 3: // iii
-      case 6: // vi
-        return "minor";
-      case 7: // vii°
-        return "dim";
-      default:
-        return "major"; // Default to major for notes not in the key
-    }
-  }
-
-  // For all other keys, use Tonal.js Scale
-  const scale = Scale.get(`${key} major`);
-  if (!scale.notes.length) return "major"; // Default to major if invalid key
-
-  // Find the scale degree (1-based)
-  const scaleDegree =
-    scale.notes.findIndex((n) => Note.get(n).pc === notePC) + 1;
-
-  // Determine chord quality based on scale degree
-  switch (scaleDegree) {
-    case 1: // I
-    case 4: // IV
-    case 5: // V
-      return "major";
-    case 2: // ii
-    case 3: // iii
-    case 6: // vi
-      return "minor";
-    case 7: // vii°
-      return "dim";
-    default:
-      return "major"; // Default to major for notes not in the key
-  }
+  // Extract the triad type from the chord name
+  if (chord.endsWith("dim")) return "dim";
+  if (chord.endsWith("m")) return "minor";
+  if (chord.endsWith("sus")) return "sus";
+  return "major";
 }
