@@ -1,5 +1,5 @@
 import Storage from "expo-sqlite/kv-store";
-import { ExtensionType, TriadType } from "./chords";
+import { ChordInfo, ExtensionType, TriadType } from "./chords";
 
 export const STORAGE_KEYS = {
   LAST_CONNECTED_DEVICE: "lastConnectedDeviceId",
@@ -11,12 +11,6 @@ export const STORAGE_KEYS = {
   LAST_PLAYED_CHORD: "lastPlayedChord",
   FAVORITE_CHORDS: "favoriteChords",
 } as const;
-
-export interface ChordHistoryEntry {
-  name: string;
-  notes: string[];
-  timestamp: number;
-}
 
 export function getLastConnectedDeviceId(): string | null {
   return Storage.getItemSync(STORAGE_KEYS.LAST_CONNECTED_DEVICE);
@@ -81,55 +75,65 @@ export function setLastExtensions(extensions: ExtensionType[]): void {
   Storage.setItemSync(STORAGE_KEYS.LAST_EXTENSIONS, JSON.stringify(extensions));
 }
 
+export function getLastPlayedChord(): ChordInfo | null {
+  const chord = Storage.getItemSync(STORAGE_KEYS.LAST_PLAYED_CHORD);
+  return chord ? JSON.parse(chord) : null;
+}
+
+export function setLastPlayedChord(chord: ChordInfo | null): void {
+  if (chord) {
+    Storage.setItemSync(STORAGE_KEYS.LAST_PLAYED_CHORD, JSON.stringify(chord));
+  } else {
+    Storage.removeItemSync(STORAGE_KEYS.LAST_PLAYED_CHORD);
+  }
+}
+
+export interface ChordHistoryEntry extends ChordInfo {
+  timestamp: number;
+}
+
+export function addChordToHistory(chord: ChordInfo): void {
+  const history = getChordHistory();
+  const newEntry: ChordHistoryEntry = {
+    ...chord,
+    timestamp: Date.now(),
+  };
+  history.unshift(newEntry);
+  // Keep only the last 100 chords
+  if (history.length > 100) {
+    history.pop();
+  }
+  Storage.setItemSync(STORAGE_KEYS.CHORD_HISTORY, JSON.stringify(history));
+}
+
 export function getChordHistory(): ChordHistoryEntry[] {
   const history = Storage.getItemSync(STORAGE_KEYS.CHORD_HISTORY);
   return history ? JSON.parse(history) : [];
 }
 
-export function addChordToHistory(chord: {
-  name: string;
-  notes: string[];
-}): void {
-  const history = getChordHistory();
-  const entry: ChordHistoryEntry = {
-    ...chord,
-    timestamp: Date.now(),
-  };
-
-  // Add to beginning, limit to 200 entries
-  const newHistory = [entry, ...history].slice(0, 200);
-  Storage.setItemSync(STORAGE_KEYS.CHORD_HISTORY, JSON.stringify(newHistory));
-
-  // Also store as last played chord
-  Storage.setItemSync(STORAGE_KEYS.LAST_PLAYED_CHORD, JSON.stringify(entry));
+export function getFavoriteChords(): ChordHistoryEntry[] {
+  const favorites = Storage.getItemSync(STORAGE_KEYS.FAVORITE_CHORDS);
+  return favorites ? JSON.parse(favorites) : [];
 }
 
-export function getLastPlayedChord(): ChordHistoryEntry | null {
-  const chord = Storage.getItemSync(STORAGE_KEYS.LAST_PLAYED_CHORD);
-  return chord ? JSON.parse(chord) : null;
+export function toggleFavoriteChord(chord: ChordHistoryEntry): void {
+  const favorites = getFavoriteChords();
+  const index = favorites.findIndex(
+    (f) => f.name === chord.name && f.timestamp === chord.timestamp,
+  );
+  if (index === -1) {
+    favorites.unshift(chord);
+  } else {
+    favorites.splice(index, 1);
+  }
+  Storage.setItemSync(STORAGE_KEYS.FAVORITE_CHORDS, JSON.stringify(favorites));
+}
+
+export function clearFavoriteChords(): void {
+  Storage.removeItemSync(STORAGE_KEYS.FAVORITE_CHORDS);
 }
 
 export function clearChordHistory(): void {
   Storage.removeItemSync(STORAGE_KEYS.CHORD_HISTORY);
   Storage.removeItemSync(STORAGE_KEYS.LAST_PLAYED_CHORD);
-}
-
-export function getFavoriteChords(): string[] {
-  const favorites = Storage.getItemSync(STORAGE_KEYS.FAVORITE_CHORDS);
-  return favorites ? JSON.parse(favorites) : [];
-}
-
-export function toggleFavoriteChord(chordName: string): boolean {
-  const favorites = getFavoriteChords();
-  const isCurrentlyFavorited = favorites.includes(chordName);
-
-  const newFavorites = isCurrentlyFavorited
-    ? favorites.filter((name) => name !== chordName)
-    : [...favorites, chordName];
-
-  Storage.setItemSync(
-    STORAGE_KEYS.FAVORITE_CHORDS,
-    JSON.stringify(newFavorites),
-  );
-  return !isCurrentlyFavorited; // return new favorite state
 }

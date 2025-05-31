@@ -86,7 +86,7 @@ export interface ChordSelection {
 
 export interface ChordInfo {
   name: string;
-  notes: string[];
+  notes: MusicalNoteWithOctave[];
   root: string;
   quality: string;
 }

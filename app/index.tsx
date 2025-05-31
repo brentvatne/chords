@@ -30,6 +30,7 @@ import {
   setLastConnectedDeviceId,
   setLastExtensions,
   setLastOctave,
+  setLastPlayedChord,
   setLastSelectedKey,
   setLastTriad,
 } from "./utils/storage";
@@ -158,7 +159,6 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     color: "#E89D45",
     fontSize: 20,
-    marginTop: 8,
   },
   headerButtons: {
     flexDirection: "row",
@@ -439,7 +439,7 @@ export default function PlayScreen() {
         const noteName = note.replace(/\d+/, "");
         // Calculate the octave for this note (might be higher for extensions)
         const noteOctave = octave + (index > 2 ? 1 : 0);
-        return `${noteName}${noteOctave}`;
+        return `${noteName}${noteOctave}` as MusicalNoteWithOctave;
       });
 
       const chordInfoWithOctaves = {
@@ -449,12 +449,13 @@ export default function PlayScreen() {
 
       setCurrentChordInfo(chordInfoWithOctaves);
       addChordToHistory(chordInfoWithOctaves);
+      setLastPlayedChord(chordInfoWithOctaves);
 
       // Get MIDI notes using the dedicated function and play them
-      const midiNotesToPlay = chordToMidiNotes(selection, rootNote);
-      if (midiNotesToPlay.length > 0) {
-        await sendNotesOnAsync(keyboard, midiNotesToPlay, 100);
-        pressedNotes.current[noteNameWithOctave] = midiNotesToPlay;
+      const midiNotes = chordToMidiNotes(selection, rootNote);
+      if (midiNotes.length > 0) {
+        await sendNotesOnAsync(keyboard, midiNotes, 100);
+        pressedNotes.current[noteNameWithOctave] = midiNotes;
       } else {
         console.warn(
           `Could not play MIDI for ${displayInfo.name}, but display info was generated.`,

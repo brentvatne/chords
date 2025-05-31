@@ -1,132 +1,140 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMidi } from "../contexts/MidiContext";
 import { chordToMidiNotes, type MusicalNoteWithOctave } from "./utils/chords";
-import { getFavoriteChords, getLastOctave } from "./utils/storage";
+import {
+  ChordHistoryEntry,
+  clearFavoriteChords,
+  getFavoriteChords,
+  getLastOctave,
+  toggleFavoriteChord,
+} from "./utils/storage";
+
+function formatTimestamp(timestamp: number): string {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+  });
+}
 
 export default function FavoritesModal() {
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const insets = useSafeAreaInsets();
+  const [favoriteChords, setFavoriteChords] = useState<ChordHistoryEntry[]>([]);
   const { keyboard } = useMidi();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    setFavorites(getFavoriteChords());
+    loadFavorites();
   }, []);
 
-  const playChord = async (chordName: string) => {
-    try {
-      // Extract the root note (first note before any quality)
-      const rootNoteMatch = chordName.match(/^[A-G][#b]?/)?.[0];
-      if (!rootNoteMatch) {
-        console.error("Could not extract root note from:", chordName);
-        return;
-      }
-
-      // Use the last played octave or default to 4
-      const octave = getLastOctave() ?? 4;
-      const rootNote = `${rootNoteMatch}${octave}` as MusicalNoteWithOctave;
-
-      // Get the chord quality (everything after the root note)
-      const quality = chordName.slice(rootNoteMatch.length);
-
-      // Reconstruct the chord info to get MIDI notes
-      const midiNotes = chordToMidiNotes(
-        {
-          triad:
-            quality.includes("m") && !quality.includes("maj")
-              ? "minor"
-              : quality.includes("dim")
-                ? "dim"
-                : quality.includes("sus")
-                  ? "sus"
-                  : "major",
-          extensions: [
-            ...(quality.includes("6") ? ["6" as const] : []),
-            ...(quality.includes("maj7")
-              ? ["M7" as const]
-              : quality.includes("7")
-                ? ["m7" as const]
-                : []),
-            ...(quality.includes("9") ? ["9" as const] : []),
-          ],
-        },
-        rootNote,
-      );
-
-      if (midiNotes.length > 0) {
-        await keyboard.playNotes(midiNotes, 100);
-        setTimeout(() => keyboard.releaseNotes(midiNotes), 500);
-      }
-    } catch (error) {
-      console.error("Error playing chord:", error);
-    }
+  const loadFavorites = async () => {
+    const favorites = await getFavoriteChords();
+    setFavoriteChords(favorites);
   };
 
-  const renderItem = ({ item }: { item: string }) => (
-    <Pressable
-      style={({ pressed }) => [
-        styles.favoriteItem,
-        pressed && { opacity: 0.7 },
-      ]}
-      onPress={() => playChord(item)}
-    >
-      <Text style={styles.chordName}>{item}</Text>
-    </Pressable>
-  );
+  const handleClearFavorites = async () => {
+    await clearFavoriteChords();
+    setFavoriteChords([]);
+  };
+
+  const handleChordPress = async (chord: ChordHistoryEntry) => {
+    const octave = getLastOctave() ?? 4;
+    const firstNote = chord.notes[0] as MusicalNoteWithOctave;
+    const midiNotes = chordToMidiNotes(
+      {
+        triad: chord.name.includes("m")
+          ? "minor"
+          : chord.name.includes("dim")
+            ? "dim"
+            : chord.name.includes("sus")
+              ? "sus"
+              : "major",
+        extensions: [],
+      },
+      firstNote,
+    );
+
+    await keyboard.playNotes(midiNotes, 100);
+    setTimeout(() => {
+      keyboard.releaseNotes(midiNotes);
+    }, 500);
+  };
+
+  const handleFavoriteToggle = async (chord: ChordHistoryEntry) => {
+    await toggleFavoriteChord(chord);
+    loadFavorites();
+  };
 
   return (
     <FlatList
-      data={favorites}
-      renderItem={renderItem}
-      keyExtractor={(item) => item}
-      contentContainerStyle={[
-        styles.contentContainer,
-        { paddingBottom: insets.bottom + 40 },
-      ]}
-      ListEmptyComponent={() => (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No favorite chords yet</Text>
-          <Text style={styles.emptySubtext}>
-            Star chords in your history to add them here
-          </Text>
-        </View>
+      data={favoriteChords}
+      keyExtractor={(item) => item.timestamp.toString()}
+      renderItem={({ item }) => (
+        <Pressable
+          style={({ pressed }) => [
+            styles.chordItem,
+            pressed && { opacity: 0.7 },
+          ]}
+          onPress={() => handleChordPress(item)}
+        >
+          <View>
+            <Text style={styles.chordName}>{item.name}</Text>
+            <Text style={styles.chordNotes}>{item.notes.join(", ")}</Text>
+          </View>
+          <Pressable
+            onPress={() => handleFavoriteToggle(item)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="heart" size={24} color="#E89D45" />
+          </Pressable>
+        </Pressable>
       )}
+      contentContainerStyle={styles.list}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  contentContainer: {
-    padding: 16,
+  container: {
+    flex: 1,
+    backgroundColor: "#1C1C1E",
   },
-  favoriteItem: {
+  clearButton: {
+    backgroundColor: "#E89D45",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  clearButtonText: {
+    color: "#1C1C1E",
+    fontWeight: "600",
+  },
+  list: {
+    padding: 20,
+  },
+  chordItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     backgroundColor: "#2A2A2A",
-    borderRadius: 12,
     padding: 16,
+    borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: "#404040",
   },
   chordName: {
-    color: "#F5F1E8",
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "600",
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: 60,
-  },
-  emptyText: {
     color: "#F5F1E8",
-    fontSize: 18,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  emptySubtext: {
+  chordNotes: {
+    fontSize: 16,
     color: "#999",
-    fontSize: 14,
-    textAlign: "center",
   },
 });
