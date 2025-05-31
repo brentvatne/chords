@@ -172,13 +172,15 @@ export function getChordInfo(
   // Convert intervals to MIDI note numbers
   const midiNotes = chordToMidiNotes(selection, rootNoteWithOctave);
 
-  // Convert MIDI notes back to note names (this is a simplification)
-  const notes = midiNotes.map((midi) => {
+  // Convert MIDI notes back to note names with octaves
+  const octave = parseInt(rootNoteWithOctave.match(/\d+/)?.[0] ?? "4", 10);
+  const notes = midiNotes.map((midi, index) => {
     const noteNum = midi % 12;
     const noteName = Object.entries(NOTE_TO_MIDI_NUMBER).find(
       ([, value]) => value === noteNum,
     )?.[0];
-    return noteName || "?";
+    const noteOctave = octave + (index > 2 ? 1 : 0);
+    return `${noteName}${noteOctave}` as MusicalNoteWithOctave;
   });
 
   return {
@@ -219,37 +221,8 @@ export function getTriadForNoteInKey(
   key: string | null,
 ): TriadType {
   if (!key) {
-    // When no key is selected ("All" keys), determine the most natural quality for each note
-    const notePC = Note.get(note).pc;
-    if (!notePC) return "major";
-
-    // In "All" keys mode, use these common associations:
-    switch (notePC) {
-      case "C":
-      case "F":
-      case "G":
-        return "major"; // Most commonly major
-      case "D":
-      case "E":
-      case "A":
-        return "minor"; // Most commonly minor
-      case "B":
-        return "dim"; // Often diminished in common keys
-      default:
-        // For black keys, check if it's more commonly seen as sharp or flat
-        const enharmonic = Note.enharmonic(notePC);
-        if (enharmonic) {
-          // If it has an enharmonic equivalent, check which is more common
-          const sharpKeys = ["C#", "D#", "F#", "G#", "A#"];
-          const flatKeys = ["Db", "Eb", "Gb", "Ab", "Bb"];
-          if (sharpKeys.includes(notePC)) {
-            return "major"; // In sharp keys, these are often major
-          } else if (flatKeys.includes(notePC)) {
-            return "minor"; // In flat keys, these are often minor
-          }
-        }
-        return "major"; // Default to major for any other cases
-    }
+    // When no key is selected ("All" keys), always use major
+    return "major";
   }
 
   // Get the note's position in the scale (1-based index)

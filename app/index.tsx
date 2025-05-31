@@ -334,9 +334,13 @@ async function sendNotesOffAsync(keyboard: MidiKeyboard, notes: number[]) {
 }
 
 export default function PlayScreen() {
-  const { selectedKey: routeKey } = useLocalSearchParams<{
-    selectedKey: string;
-  }>();
+  // Initialize with stored key if no route key provided
+  const params = useLocalSearchParams<{ selectedKey: string }>();
+  const selectedKey =
+    params.selectedKey === undefined
+      ? getLastSelectedKey()
+      : params.selectedKey;
+
   const { connectedDevice, keyboard, devices, connectToDevice } = useMidi();
 
   // Initialize state with stored values
@@ -369,14 +373,12 @@ export default function PlayScreen() {
     setLastExtensions(selectedExtensions);
   }, [selectedExtensions]);
 
+  // Store key changes
   useEffect(() => {
-    if (routeKey) {
-      setLastSelectedKey(routeKey);
-    } else {
-      // Clear the stored key when no key is selected
-      setLastSelectedKey(null);
+    if (selectedKey !== undefined) {
+      setLastSelectedKey(selectedKey);
     }
-  }, [routeKey]);
+  }, [selectedKey]);
 
   // Store the last connected device when it changes
   useEffect(() => {
@@ -408,24 +410,11 @@ export default function PlayScreen() {
     }
   }, [connectedDevice, devices, connectToDevice]);
 
-  // Restore last selected key if none provided in route
-  useEffect(() => {
-    if (routeKey === undefined) {
-      const lastKey = getLastSelectedKey();
-      if (lastKey) {
-        router.replace({
-          pathname: "/",
-          params: { selectedKey: lastKey },
-        });
-      }
-    }
-  }, [routeKey]);
-
   const handleNotePressIn = async (noteNameWithOctave: string) => {
     try {
       const rootNote = noteNameWithOctave as MusicalNoteWithOctave;
       const selection: ChordSelection = {
-        triad: selectedTriad ?? getTriadForNoteInKey(rootNote, routeKey),
+        triad: selectedTriad ?? getTriadForNoteInKey(rootNote, selectedKey),
         extensions: selectedExtensions,
       };
 
@@ -721,7 +710,7 @@ export default function PlayScreen() {
                 }}
               >
                 <Text style={styles.keyButtonText}>
-                  Key: {routeKey || "All"}
+                  Key: {selectedKey || "All"}
                 </Text>
               </Pressable>
             </View>
@@ -729,7 +718,7 @@ export default function PlayScreen() {
               octave={octave}
               onNotePressIn={handleNotePressIn}
               onNotePressOut={handleNotePressOut}
-              selectedKey={routeKey || null}
+              selectedKey={selectedKey || null}
             />
           </View>
         </View>

@@ -81,42 +81,38 @@ export default function HistoryModal() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.title}>Chord history</Text>
-
-      <FlatList
-        data={history}
-        keyExtractor={(item) => item.timestamp.toString()}
-        renderItem={({ item }) => (
+    <FlatList
+      data={history}
+      keyExtractor={(item) => item.timestamp.toString()}
+      renderItem={({ item }) => (
+        <Pressable
+          style={({ pressed }) => [
+            styles.chordItem,
+            pressed && { opacity: 0.7 },
+          ]}
+          onPress={() => handleChordPress(item)}
+        >
+          <View style={styles.chordInfo}>
+            <Text style={styles.chordName}>{item.name}</Text>
+            <Text style={styles.chordNotes}>{item.notes.join(", ")}</Text>
+            <Text style={styles.timestamp}>
+              {formatTimestamp(item.timestamp)}
+            </Text>
+          </View>
           <Pressable
-            style={({ pressed }) => [
-              styles.chordItem,
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={() => handleChordPress(item)}
+            onPress={() => handleFavoriteToggle(item)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <View style={styles.chordInfo}>
-              <Text style={styles.chordName}>{item.name}</Text>
-              <Text style={styles.chordNotes}>{item.notes.join(", ")}</Text>
-              <Text style={styles.timestamp}>
-                {formatTimestamp(item.timestamp)}
-              </Text>
-            </View>
-            <Pressable
-              onPress={() => handleFavoriteToggle(item)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons
-                name={isChordFavorited(item) ? "heart" : "heart-outline"}
-                size={24}
-                color="#E89D45"
-              />
-            </Pressable>
+            <Ionicons
+              name={isChordFavorited(item) ? "heart" : "heart-outline"}
+              size={24}
+              color="#E89D45"
+            />
           </Pressable>
-        )}
-        contentContainerStyle={styles.list}
-      />
-    </View>
+        </Pressable>
+      )}
+      contentContainerStyle={styles.list}
+    />
   );
 }
 
